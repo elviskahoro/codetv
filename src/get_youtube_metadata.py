@@ -4,11 +4,16 @@ from __future__ import annotations
 import modal
 from modal import Image
 from pydantic import BaseModel
+from enum import Enum
+
+class TranscriptOrMetadata(Enum):
+    transcript = "transcript"
+    metadata = "metadata"
 
 
 class Webhook(BaseModel):
     link: str
-    limit: int = 10
+    transcript_or_metadata: TranscriptOrMetadata = TranscriptOrMetadata.metadata
 
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -37,11 +42,11 @@ app = modal.App(
 def web(
     webhook: Webhook,
 ) -> str:
-    query: str = webhook.link
-    limit: int = webhook.limit
-    print(query)
-    print(limit)
-    return "github search"
+    link: str = webhook.link
+    transcript_or_metadata: TranscriptOrMetadata = webhook.transcript_or_metadata
+    print(link)
+    print(transcript_or_metadata)
+    return link
 
 
 @app.local_entrypoint()
