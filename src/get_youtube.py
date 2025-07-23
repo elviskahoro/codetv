@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 
 import yt_dlp
@@ -9,44 +8,31 @@ from yt_dlp import YoutubeDL
 
 
 class YouTubeDownloader:
-    """A comprehensive YouTube downloader that extracts all available information."""
+    """A comprehensive YouTube downloader that extracts all available information in memory."""
 
-    def __init__(self, output_path: str = "./downloads") -> None:
-        """Initialize the YouTube downloader.
+    def __init__(self) -> None:
+        """Initialize the YouTube downloader for in-memory processing."""
+        pass
 
-        Args:
-            output_path: Directory to save downloaded files
-        """
-        self.output_path = output_path
-        os.makedirs(output_path, exist_ok=True)
-
-    def get_all_info(self, url: str, download_video: bool = False) -> dict[str, Any]:
-        """Extract all available information from a YouTube URL.
+    def get_all_info(self, url: str) -> dict[str, Any]:
+        """Extract all available information from a YouTube URL in memory.
 
         Args:
             url: YouTube URL to process
-            download_video: Whether to download the actual video file
 
         Returns:
             Dictionary containing all extracted information
         """
         ydl_opts = {
-            "writeinfojson": True,
-            "writesubtitles": True,
-            "writeautomaticsub": True,
-            "writedescription": True,
-            "writethumbnail": True,
-            "writeannotations": True,
+            "skip_download": True,  # Never download files
             "extract_flat": False,
-            "outtmpl": f"{self.output_path}/%(title)s.%(ext)s",
+            "quiet": True,  # Suppress output
+            "no_warnings": True,
         }
-
-        if not download_video:
-            ydl_opts["skip_download"] = True
 
         with YoutubeDL(ydl_opts) as ydl:
             try:
-                info = ydl.extract_info(url, download=download_video)
+                info = ydl.extract_info(url, download=False)
                 return self._process_info(info)
             except Exception as e:
                 return {"error": str(e), "url": url}
@@ -73,7 +59,7 @@ class YouTubeDownloader:
                 return {"error": str(e), "url": url}
 
     def get_subtitles(self, url: str) -> dict[str, Any]:
-        """Extract subtitles/captions from a YouTube video.
+        """Extract subtitles/captions from a YouTube video in memory.
 
         Args:
             url: YouTube URL to process
@@ -83,17 +69,14 @@ class YouTubeDownloader:
         """
         ydl_opts = {
             "skip_download": True,
-            "writesubtitles": True,
-            "writeautomaticsub": True,
-            "outtmpl": f"{self.output_path}/%(title)s.%(ext)s",
+            "extract_flat": False,
+            "quiet": True,
+            "no_warnings": True,
         }
 
         with YoutubeDL(ydl_opts) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
-                # Download subtitles separately
-                ydl.download([url])
-
                 return {
                     "subtitles": info.get("subtitles", {}),
                     "automatic_captions": info.get("automatic_captions", {}),
@@ -174,58 +157,79 @@ class YouTubeDownloader:
             "artist": info.get("artist"),
             "album": info.get("album"),
             "genre": info.get("genre"),
+            # Subtitle content (extract actual text if available)
+            "subtitle_content": self._extract_subtitle_content(info),
         }
 
         # Remove None values
         return {k: v for k, v in processed.items() if v is not None}
 
-    def save_info_to_json(self, info: dict[str, Any], filename: str) -> str:
-        """Save extracted information to a JSON file.
+    def _extract_subtitle_content(self, info: dict[str, Any]) -> dict[str, str]:
+        """Extract subtitle content from available subtitle data.
+        
+        Args:
+            info: Raw information dictionary from yt-dlp
+            
+        Returns:
+            Dictionary mapping language codes to subtitle content
+        """
+        subtitle_content = {}
+        
+        # Process manual subtitles
+        subtitles = info.get("subtitles", {})
+        for lang, sub_list in subtitles.items():
+            if sub_list and isinstance(sub_list, list):
+                # Get the first subtitle format (usually the best quality)
+                subtitle_content[f"manual_{lang}"] = f"Available subtitle formats: {[s.get('ext', 'unknown') for s in sub_list]}"
+        
+        # Process automatic captions
+        auto_captions = info.get("automatic_captions", {})
+        for lang, cap_list in auto_captions.items():
+            if cap_list and isinstance(cap_list, list):
+                subtitle_content[f"auto_{lang}"] = f"Available caption formats: {[c.get('ext', 'unknown') for c in cap_list]}"
+        
+        return subtitle_content
+    
+    def to_json_string(self, info: dict[str, Any]) -> str:
+        """Convert extracted information to JSON string.
 
         Args:
-            info: Information dictionary to save
-            filename: Name of the output file (without extension)
+            info: Information dictionary to convert
 
         Returns:
-            Path to the saved file
+            JSON string representation of the information
         """
-        filepath = os.path.join(self.output_path, f"{filename}.json")
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(info, f, indent=2, ensure_ascii=False, default=str)
-        return filepath
+        return json.dumps(info, indent=2, ensure_ascii=False, default=str)
 
 
-def download_youtube_info(
-    url: str, output_path: str = "./downloads", download_video: bool = False
-) -> dict[str, Any]:
-    """Convenience function to download YouTube information.
+def download_youtube_info(url: str) -> dict[str, Any]:
+    """Convenience function to extract YouTube information in memory.
 
     Args:
         url: YouTube URL to process
-        output_path: Directory to save files
-        download_video: Whether to download the actual video
 
     Returns:
         Dictionary containing all extracted information
     """
-    downloader = YouTubeDownloader(output_path)
-    return downloader.get_all_info(url, download_video)
+    downloader = YouTubeDownloader()
+    return downloader.get_all_info(url)
 
 
 if __name__ == "__main__":
     # Example usage
     url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
 
-    downloader = YouTubeDownloader("./youtube_downloads")
+    downloader = YouTubeDownloader()
 
-    # Get all information without downloading video
+    # Get all information in memory
     print("Extracting all information...")
-    info = downloader.get_all_info(url, download_video=False)
+    info = downloader.get_all_info(url)
 
-    # Save to JSON file
+    # Process results
     if "error" not in info:
-        json_path = downloader.save_info_to_json(info, f"info_{info['id']}")
-        print(f"Information saved to: {json_path}")
+        # Convert to JSON string for webhook response
+        json_output = downloader.to_json_string(info)
+        print(f"JSON output length: {len(json_output)} characters")
 
         # Print some key information
         print(f"Title: {info.get('title')}")
@@ -236,5 +240,6 @@ if __name__ == "__main__":
         print(
             f"Available auto captions: {list(info.get('automatic_captions', {}).keys())}"
         )
+        print(f"Subtitle content keys: {list(info.get('subtitle_content', {}).keys())}")
     else:
         print(f"Error: {info['error']}")
