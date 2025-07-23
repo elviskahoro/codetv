@@ -15,7 +15,6 @@ DEFAULT_YOUTUBE_VIDEO: str = (
 )
 
 
-
 class TranscriptOrMetadata(Enum):
     transcript = "transcript"
     metadata = "metadata"
@@ -47,7 +46,7 @@ def get_youtube_info(
 ) -> YouTubeData:
     downloader = YouTubeDownloader()
     youtube_data = downloader.get_all_info(url)
-    
+
     if youtube_data.error is None:
         # Convert to JSON string for webhook response
         json_output = downloader.to_json_string(youtube_data)
