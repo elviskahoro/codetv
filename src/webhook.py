@@ -8,11 +8,12 @@ from enum import Enum
 import yt_dlp
 from yt_dlp import YoutubeDL
 
-from get_youtube import YouTubeDownloader
+from get_youtube import YouTubeDownloader, YouTubeData
 
 DEFAULT_YOUTUBE_VIDEO: str = (
     "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
 )
+
 
 
 class TranscriptOrMetadata(Enum):
@@ -43,29 +44,28 @@ app = modal.App(
 
 def get_youtube_info(
     url: str,
-) -> dict[str, Any]:
+) -> YouTubeData:
     downloader = YouTubeDownloader()
-    info = downloader.get_all_info(url)
-    if "error" not in info:
+    youtube_data = downloader.get_all_info(url)
+    
+    if youtube_data.error is None:
         # Convert to JSON string for webhook response
-        json_output = downloader.to_json_string(info)
+        json_output = downloader.to_json_string(youtube_data)
         print(f"JSON output length: {len(json_output)} characters")
         print(json_output)
 
         # Print some key information
-        # print(f"Title: {info.get('title')}")
-        # print(f"Uploader: {info.get('uploader')}")
-        # print(f"Duration: {info.get('duration')} seconds")
-        # print(f"View count: {info.get('view_count')}")
-        # print(f"Available subtitles: {list(info.get('subtitles', {}).keys())}")
-        # print(
-        #     f"Available auto captions: {list(info.get('automatic_captions', {}).keys())}"
-        # )
-        # print(f"Subtitle content keys: {list(info.get('subtitle_content', {}).keys())}")
+        print(f"Title: {youtube_data.title}")
+        print(f"Uploader: {youtube_data.uploader}")
+        print(f"Duration: {youtube_data.duration} seconds")
+        print(f"View count: {youtube_data.view_count}")
+        print(f"Available subtitles: {list(youtube_data.subtitles.keys()) if youtube_data.subtitles else []}")
+        print(f"Available auto captions: {list(youtube_data.automatic_captions.keys()) if youtube_data.automatic_captions else []}")
+        print(f"Subtitle content keys: {list(youtube_data.subtitle_content.keys()) if youtube_data.subtitle_content else []}")
     else:
-        print(f"Error: {info['error']}")
+        print(f"Error: {youtube_data.error}")
 
-    return {}
+    return youtube_data
 
 
 @app.function(
@@ -79,7 +79,7 @@ def get_youtube_info(
 )
 def web(
     webhook: Webhook,
-) -> str:
+) -> YouTubeData:
     link: str = webhook.link
     transcript_or_metadata: TranscriptOrMetadata = webhook.transcript_or_metadata
     print(link)
@@ -92,6 +92,7 @@ def web(
 @app.local_entrypoint()
 def local() -> None:
     print("test")
-    return get_youtube_info(
+    youtube_data = get_youtube_info(
         url=DEFAULT_YOUTUBE_VIDEO,
     )
+    print(f"Successfully extracted data for: {youtube_data.title}")
