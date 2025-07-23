@@ -1,0 +1,26 @@
+2025-07-23 14:01:53 - awesome_list_agent - INFO - setup_logging:65 - Logging initialized - Level: INFO, File: logs/awesome_list_20250723_140153.log
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:80 - ============================================================
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:81 - Starting Awesome List Agent CLI
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:82 - Timestamp: 2025-07-23T14:01:53.367689
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:83 - Input URL: https://github.com/vinta/awesome-python
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:84 - Log Level: INFO
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:85 - Verbosity: high
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:86 - Galileo Enabled: True
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:87 - ============================================================
+2025-07-23 14:01:53 - awesome_list_agent - INFO - main:103 - Initializing AwesomeListAgent with factory
+2025-07-23 14:01:54 - awesome_list_agent - INFO - main:110 - Starting to process URL: https://github.com/vinta/awesome-python
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - INFO - execute:99 - Starting to parse Awesome List URL: https://github.com/vinta/awesome-python
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - INFO - execute:116 - Fetching content from URL
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - INFO - execute:136 - Successfully fetched content (666445 characters) in 0.28s
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - INFO - execute:139 - Starting content parsing
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - INFO - execute:149 - Parsing completed successfully in 0.01s
+2025-07-23 14:01:54 - awesome_list_agent.AwesomeListParser - ERROR - _log_tool_span:205 - Failed to serialize tool span data: Logger._log() got an unexpected keyword argument 'span_data'
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:119 - Processing completed in 1.20 seconds
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:120 - Result status: success
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:123 - Successfully processed Awesome List
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:125 - Extracted topic: GitHub - vinta/awesome-python: An opinionated list of awesome Python frameworks, libraries, software and resources.
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:126 - Found 971 items
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:127 - Detected language: Python
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:128 - Categories: 10
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:141 - Application completed successfully
+2025-07-23 14:01:55 - awesome_list_agent - INFO - main:142 - ============================================================

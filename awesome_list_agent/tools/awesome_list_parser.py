@@ -4,6 +4,8 @@ import re
 import asyncio
 import aiohttp
 import logging
+import time
+import json
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -46,7 +48,7 @@ class AwesomeListParserMetadata(BaseModel):
             },
             "total_items": {
                 "type": "integer",
-                "description": "Approximate number of items in the list"
+                "description": "Number of items in the list"
             },
             "language": {
                 "type": "string",
@@ -89,6 +91,11 @@ class AwesomeListParser(BaseTool):
         Returns:
             Dictionary containing parsed information about the list
         """
+        start_time = time.time()
+        
+        # Prepare input for logging
+        tool_inputs = {"url": url}
+        
         self.logger.info(f"Starting to parse Awesome List URL: {url}")
         
         try:
@@ -96,46 +103,131 @@ class AwesomeListParser(BaseTool):
             if not url.startswith(('http://', 'https://')):
                 error_msg = "Invalid URL format. Must start with http:// or https://"
                 self.logger.error(f"URL validation failed: {error_msg}")
+                
+                # Log tool span with error
+                self._log_tool_span("awesome_list_parser", tool_inputs, None, 
+                                  time.time() - start_time, False, error_msg)
+                
                 return ToolError(error=error_msg)
             
             self.logger.debug("URL validation passed")
             
             # Fetch the content
             self.logger.info("Fetching content from URL")
+            fetch_start_time = time.time()
+            
             session = await self._get_session()
             async with session.get(url) as response:
                 self.logger.debug(f"HTTP response status: {response.status}")
                 if response.status != 200:
                     error_msg = f"Failed to fetch URL: HTTP {response.status}"
                     self.logger.error(error_msg)
+                    
+                    # Log tool span with error
+                    self._log_tool_span("awesome_list_parser", tool_inputs, None,
+                                      time.time() - start_time, False, error_msg)
+                    
                     return ToolError(error=error_msg)
                 
                 content = await response.text()
                 content_length = len(content)
-                self.logger.info(f"Successfully fetched content ({content_length} characters)")
+                fetch_duration = time.time() - fetch_start_time
+                
+                self.logger.info(f"Successfully fetched content ({content_length} characters) in {fetch_duration:.2f}s")
             
             # Parse the content
             self.logger.info("Starting content parsing")
+            parse_start_time = time.time()
+            
             parsed_data = await self._parse_content(content, url)
+            
+            parse_duration = time.time() - parse_start_time
+            total_duration = time.time() - start_time
             
             # Log parsing results
             if isinstance(parsed_data, dict):
-                self.logger.info(f"Parsing completed successfully")
+                self.logger.info(f"Parsing completed successfully in {parse_duration:.2f}s")
                 self.logger.debug(f"Extracted topic: {parsed_data.get('topic', 'N/A')}")
                 self.logger.debug(f"Found {parsed_data.get('total_items', 0)} items")
                 self.logger.debug(f"Detected {len(parsed_data.get('categories', []))} categories")
                 self.logger.debug(f"Language: {parsed_data.get('language', 'N/A')}")
+                
+                # Log successful tool span with detailed output
+                self._log_tool_span("awesome_list_parser", tool_inputs, parsed_data, 
+                                  total_duration, True)
+            else:
+                # Log error tool span
+                self._log_tool_span("awesome_list_parser", tool_inputs, parsed_data,
+                                  total_duration, False, "Parsing failed")
             
             return parsed_data
             
         except aiohttp.ClientError as e:
             error_msg = f"Network error while fetching URL: {str(e)}"
             self.logger.error(error_msg)
+            
+            # Log tool span with error
+            self._log_tool_span("awesome_list_parser", tool_inputs, None,
+                              time.time() - start_time, False, error_msg)
+            
             return ToolError(error=error_msg)
         except Exception as e:
             error_msg = f"Unexpected error parsing Awesome List: {str(e)}"
             self.logger.error(error_msg, exc_info=True)
+            
+            # Log tool span with error
+            self._log_tool_span("awesome_list_parser", tool_inputs, None,
+                              time.time() - start_time, False, error_msg)
+            
             return ToolError(error=error_msg)
+    
+    def _log_tool_span(self, tool_name: str, inputs: Dict[str, Any], outputs: Optional[Dict[str, Any]], 
+                      duration: float, success: bool, error: Optional[str] = None):
+        """Log tool execution span with Galileo integration."""
+        duration_ns = int(duration * 1_000_000_000)  # Convert to nanoseconds
+        
+        # Create span data for logging
+        span_data = {
+            "tool_name": tool_name,
+            "inputs": self._sanitize_for_json(inputs),
+            "outputs": self._sanitize_for_json(outputs) if outputs else None,
+            "success": success,
+            "error": error,
+            "duration_ns": duration_ns,
+            "duration_ms": duration * 1000
+        }
+        
+        # Log as JSON for clarity
+        try:
+            span_json = json.dumps(span_data, indent=2, ensure_ascii=False)
+            self.logger.info(f"Tool Span: {tool_name}", span_data=span_json, **span_data)
+        except Exception as e:
+            self.logger.error(f"Failed to serialize tool span data: {str(e)}")
+        
+        # If we have a logger with Galileo support, use it
+        if hasattr(self.logger, 'add_tool_span'):
+            try:
+                self.logger.add_tool_span(
+                    tool_name=tool_name,
+                    inputs=inputs,
+                    outputs=outputs,
+                    duration_ns=duration_ns,
+                    success=success,
+                    error=error
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to add Galileo tool span: {str(e)}")
+    
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """Sanitize an object for JSON serialization."""
+        if isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._sanitize_for_json(item) for item in obj]
+        elif isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        else:
+            return str(obj)
     
     async def _parse_content(self, content: str, url: str) -> Dict[str, Any]:
         """Parse the HTML/Markdown content to extract list information.
@@ -267,48 +359,48 @@ class AwesomeListParser(BaseTool):
         # Count markdown links
         md_links = len(re.findall(r'\[([^\]]+)\]\([^)]+\)', content))
         
-        # Count HTML links (excluding navigation)
-        html_links = len(re.findall(r'<a[^>]+href=[^>]*>([^<]+)</a>', content, re.IGNORECASE))
+        # Count HTML links
+        html_links = len(re.findall(r'<a[^>]+href[^>]+>', content, re.IGNORECASE))
         
-        # Use the higher count
-        return max(md_links, html_links)
+        # Count list items
+        list_items = len(re.findall(r'^\s*[-*+]\s+', content, re.MULTILINE))
+        
+        # Return the maximum count (likely the most accurate)
+        return max(md_links, html_links, list_items)
     
     def _detect_language(self, content: str, url: str) -> str:
-        """Detect the primary programming language if applicable."""
+        """Detect the primary programming language from content or URL."""
         # Common programming languages to look for
         languages = {
-            'javascript': ['javascript', 'js', 'node', 'npm', 'react', 'vue', 'angular'],
-            'python': ['python', 'py', 'django', 'flask', 'pandas', 'numpy'],
-            'java': ['java', 'spring', 'maven', 'gradle'],
-            'go': ['golang', 'go', 'gin', 'beego'],
-            'rust': ['rust', 'cargo', 'crates'],
-            'php': ['php', 'laravel', 'symfony', 'composer'],
-            'ruby': ['ruby', 'rails', 'gem'],
-            'csharp': ['c#', 'csharp', '.net', 'dotnet'],
-            'cpp': ['c++', 'cpp'],
-            'swift': ['swift', 'ios', 'macos'],
-            'kotlin': ['kotlin', 'android'],
-            'typescript': ['typescript', 'ts']
+            'python': ['python', 'py', 'django', 'flask', 'fastapi'],
+            'javascript': ['javascript', 'js', 'node', 'react', 'vue', 'angular'],
+            'java': ['java', 'spring', 'android'],
+            'go': ['go', 'golang'],
+            'rust': ['rust'],
+            'cpp': ['cpp', 'c++', 'c plus plus'],
+            'csharp': ['c#', 'csharp', '.net'],
+            'php': ['php', 'laravel', 'wordpress'],
+            'ruby': ['ruby', 'rails'],
+            'swift': ['swift', 'ios'],
+            'kotlin': ['kotlin'],
+            'typescript': ['typescript', 'ts'],
+            'scala': ['scala'],
+            'r': ['r'],
+            'matlab': ['matlab'],
+            'julia': ['julia']
         }
         
-        content_lower = content.lower()
-        url_lower = url.lower()
-        
         # Check URL first
+        url_lower = url.lower()
         for lang, keywords in languages.items():
             if any(keyword in url_lower for keyword in keywords):
                 return lang.title()
         
         # Check content
-        lang_scores = {}
+        content_lower = content.lower()
         for lang, keywords in languages.items():
-            score = sum(content_lower.count(keyword) for keyword in keywords)
-            if score > 0:
-                lang_scores[lang] = score
-        
-        if lang_scores:
-            best_lang = max(lang_scores, key=lang_scores.get)
-            return best_lang.title()
+            if any(keyword in content_lower for keyword in keywords):
+                return lang.title()
         
         return "General"
     
@@ -317,25 +409,33 @@ class AwesomeListParser(BaseTool):
         total_items: int, language: str
     ) -> str:
         """Generate a contextual summary of the Awesome List."""
-        summary_parts = [f"This is an Awesome List focused on {topic}."]
+        summary_parts = []
         
-        if description != "No description available":
-            summary_parts.append(description)
+        if topic and topic != "Unknown Topic":
+            summary_parts.append(f"Comprehensive collection of {topic.lower()} resources")
         
-        if language != "General":
-            summary_parts.append(f"It primarily covers {language} related resources.")
-        
-        if categories:
-            if len(categories) <= 3:
-                cat_text = ", ".join(categories)
-            else:
-                cat_text = f"{', '.join(categories[:3])}, and {len(categories) - 3} other categories"
-            summary_parts.append(f"Main categories include: {cat_text}.")
+        if language and language != "General":
+            summary_parts.append(f"focused on {language} development")
         
         if total_items > 0:
-            summary_parts.append(f"The list contains approximately {total_items} curated resources.")
+            summary_parts.append(f"with {total_items} curated items")
         
-        return " ".join(summary_parts)
+        if categories:
+            summary_parts.append(f"organized into {len(categories)} key areas")
+        
+        if description and description != "No description available":
+            summary_parts.append(f"covering {description.lower()}")
+        
+        if not summary_parts:
+            summary_parts.append("Curated collection of high-quality resources")
+        
+        summary = " ".join(summary_parts) + "."
+        
+        # Add learning context
+        if categories:
+            summary += f" Ideal for developers looking to master {topic.lower()} through structured learning paths."
+        
+        return summary
     
     async def __aenter__(self):
         return self

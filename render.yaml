@@ -1,0 +1,54 @@
+services:
+  # Frontend Web Service
+  - type: web
+    name: codetv-frontend
+    plan: free
+    env: python
+    region: oregon
+    buildCommand: |
+      # Install UV for faster package management
+      pip install uv
+      # Install dependencies using UV
+      uv pip install --system -r requirements.txt
+      # Initialize and build Reflex app
+      reflex init --name codetv --template blank --loglevel INFO
+      reflex export --frontend-only --no-zip
+    startCommand: reflex run --env prod --port $PORT --host 0.0.0.0
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: REFLEX_ENV
+        value: prod
+      - key: NODE_VERSION
+        value: 18.19.0
+    healthCheckPath: /
+    disk:
+      name: codetv-frontend-disk
+      mountPath: /app/logs
+      sizeGB: 1
+    autoDeploy: true
+    rootDir: .
+    
+  # Optional: Backend API Service (if needed in future)
+  # - type: web
+  #   name: codetv-api
+  #   plan: free
+  #   env: python
+  #   region: oregon
+  #   buildCommand: |
+  #     pip install uv
+  #     uv pip install --system -r requirements.txt
+  #   startCommand: uvicorn app.api:app --host 0.0.0.0 --port $PORT
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: 3.11.8
+  #   healthCheckPath: /health
+  #   autoDeploy: true
+
+databases:
+  # Optional: PostgreSQL database (if needed for future features)
+  # - name: codetv-db
+  #   plan: free
+  #   region: oregon
+  #   databaseName: codetv
+  #   user: codetv_user

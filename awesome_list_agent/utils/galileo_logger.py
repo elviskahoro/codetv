@@ -31,7 +31,7 @@ class GalileoAgentLogger(AgentLogger):
     
     This logger integrates with Galileo observability platform to provide:
     - Trace and span logging for LLM calls
-    - Tool execution monitoring
+    - Tool execution monitoring with JSON input/output
     - Performance metrics
     - Error tracking
     
@@ -47,6 +47,7 @@ class GalileoAgentLogger(AgentLogger):
         self.galileo_logger: Optional[GalileoLoggerBase] = None
         self.current_trace_name: Optional[str] = None
         self.trace_start_time: Optional[int] = None
+        self.current_spans: List[Dict[str, Any]] = []
         
         # Fallback console logger for when Galileo is not available
         from .logging import ConsoleAgentLogger
@@ -182,6 +183,7 @@ class GalileoAgentLogger(AgentLogger):
             self.galileo_logger.start_trace(trace_name)
             self.current_trace_name = trace_name
             self.trace_start_time = time.perf_counter_ns()
+            self.current_spans = []
             
             self.fallback_logger.info(
                 f"Started Galileo trace: {trace_name}",
@@ -269,41 +271,51 @@ class GalileoAgentLogger(AgentLogger):
         error: Optional[str] = None
     ) -> None:
         """
-        Add a tool execution span to the current trace.
+        Add a tool execution span to the current trace with detailed JSON logging.
         
         Args:
             tool_name: Name of the tool
-            inputs: Tool inputs
-            outputs: Tool outputs
+            inputs: Tool inputs (will be logged as JSON)
+            outputs: Tool outputs (will be logged as JSON)
             duration_ns: Duration in nanoseconds
             success: Whether the tool execution was successful
             error: Error message if execution failed
         """
-        if not self.galileo_enabled or not self.galileo_logger:
+        # Always log to fallback logger for visibility
+        span_data = {
+            "tool_name": tool_name,
+            "inputs": self._sanitize_for_json(inputs),
+            "outputs": self._sanitize_for_json(outputs) if outputs else None,
+            "success": success,
+            "error": error,
+            "duration_ns": duration_ns,
+            "duration_ms": duration_ns / 1_000_000 if duration_ns else None
+        }
+        
+        # Log the span data as JSON for clarity
+        try:
+            span_json = json.dumps(span_data, indent=2, ensure_ascii=False)
             self.fallback_logger.info(
                 f"Tool Span: {tool_name}",
-                success=success,
-                duration_ns=duration_ns,
-                error=error
+                span_data=span_json,
+                **span_data
             )
+        except Exception as e:
+            self.fallback_logger.error(f"Failed to serialize tool span data: {str(e)}")
+        
+        if not self.galileo_enabled or not self.galileo_logger:
             return
         
         try:
-            # Create a custom span for tool execution
-            span_data = {
-                "tool_name": tool_name,
-                "inputs": self._sanitize_for_json(inputs),
-                "outputs": self._sanitize_for_json(outputs) if outputs else None,
-                "success": success,
-                "error": error,
-                "duration_ns": duration_ns
-            }
+            # Store span data for trace conclusion
+            self.current_spans.append(span_data)
             
-            # For now, we'll log this as a custom span
-            # In the future, we could add a specific tool span type to Galileo
+            # Log to Galileo if available
             self.fallback_logger.info(
-                f"Tool execution span: {tool_name}",
-                **span_data
+                f"Added tool span to Galileo: {tool_name}",
+                tool_name=tool_name,
+                success=success,
+                duration_ns=duration_ns
             )
             
         except Exception as e:
@@ -325,23 +337,36 @@ class GalileoAgentLogger(AgentLogger):
             self.fallback_logger.info(
                 f"Concluded trace: {self.current_trace_name}",
                 output=output,
-                duration_ns=duration_ns
+                duration_ns=duration_ns,
+                total_spans=len(self.current_spans)
             )
             return
         
         try:
+            # Log all spans that were collected
+            if self.current_spans:
+                self.fallback_logger.info(
+                    f"Trace {self.current_trace_name} collected {len(self.current_spans)} tool spans"
+                )
+                for i, span in enumerate(self.current_spans, 1):
+                    self.fallback_logger.debug(
+                        f"Span {i}: {span['tool_name']} - {span.get('duration_ms', 0):.2f}ms - {'✅' if span['success'] else '❌'}"
+                    )
+            
             self.galileo_logger.conclude(output=output, duration_ns=duration_ns)
             self.galileo_logger.flush()
             
             self.fallback_logger.info(
                 f"Concluded and flushed Galileo trace: {self.current_trace_name}",
                 output=output,
-                duration_ns=duration_ns
+                duration_ns=duration_ns,
+                total_spans=len(self.current_spans)
             )
             
             # Reset trace state
             self.current_trace_name = None
             self.trace_start_time = None
+            self.current_spans = []
             
         except Exception as e:
             self.fallback_logger.error(

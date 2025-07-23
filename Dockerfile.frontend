@@ -1,0 +1,76 @@
+# Multi-stage Dockerfile for CodeTV Frontend
+# Optimized for Render.com deployment
+
+# Build stage
+FROM python:3.11-slim as builder
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    libffi-dev \
+    libssl-dev \
+    curl \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV for faster Python package management
+RUN pip install uv
+
+# Copy requirements first for better Docker layer caching
+COPY requirements.txt .
+RUN uv pip install --system -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Initialize Reflex app and build
+RUN reflex init --name codetv --template blank --loglevel INFO
+RUN reflex export --frontend-only --no-zip
+
+# Production stage
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd --create-home --shell /bin/bash app
+
+# Set work directory
+WORKDIR /app
+
+# Install UV for package management
+RUN pip install uv
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN uv pip install --system -r requirements.txt
+
+# Copy application code
+COPY --chown=app:app . .
+
+# Copy built frontend from builder stage
+COPY --from=builder --chown=app:app /app/.web /app/.web
+
+# Switch to non-root user
+USER app
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/ || exit 1
+
+# Command to run the application
+CMD ["reflex", "run", "--env", "prod", "--port", "3000", "--host", "0.0.0.0"]

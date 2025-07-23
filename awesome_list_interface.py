@@ -149,7 +149,7 @@ async def main():
         sys.exit(1)
 
 def display_results(result: dict, processing_time: float):
-    """Display results in a user-friendly format."""
+    """Display results in a user-friendly format with learning guidance."""
     print(f"\n✅ Processing completed in {processing_time:.2f} seconds\n")
     
     if result.get('status') == 'error':
@@ -157,35 +157,135 @@ def display_results(result: dict, processing_time: float):
         return
     
     parsed_data = result.get('parsed_data', {})
+    learning_guidance = result.get('learning_guidance', {})
     
-    print("📊 PARSED INFORMATION:")
-    print("-" * 30)
+    # Display basic information
+    print("🎯 LEARNING PATH GENERATOR RESULTS")
+    print("=" * 50)
+    
+    # Basic parsed information
+    print("\n📊 RESOURCE ANALYSIS:")
+    print("-" * 25)
     
     info_items = [
         ("Topic", parsed_data.get('topic', 'N/A')),
         ("Description", parsed_data.get('description', 'N/A')),
         ("Language", parsed_data.get('language', 'N/A')),
-        ("Total Items", parsed_data.get('total_items', 0)),
-        ("Categories", len(parsed_data.get('categories', []))),
+        ("Total Resources", parsed_data.get('total_items', 0)),
+        ("Learning Categories", len(parsed_data.get('categories', []))),
     ]
     
     for label, value in info_items:
-        print(f"{label:<15}: {value}")
+        print(f"{label:<20}: {value}")
     
     # Show categories if they exist
     categories = parsed_data.get('categories', [])
     if categories:
-        print(f"\n📂 CATEGORIES ({len(categories)}):")
-        for i, category in enumerate(categories[:5], 1):  # Show first 5
-            print(f"  {i}. {category}")
-        if len(categories) > 5:
-            print(f"  ... and {len(categories) - 5} more")
+        print(f"\n📂 LEARNING CATEGORIES ({len(categories)}):")
+        for i, category in enumerate(categories[:8], 1):  # Show first 8
+            print(f"  {i:2d}. {category}")
+        if len(categories) > 8:
+            print(f"  ... and {len(categories) - 8} more categories")
+    
+    # Display learning guidance
+    if learning_guidance:
+        print(f"\n🎓 INSTRUCTIONAL GUIDANCE:")
+        print("-" * 25)
+        
+        # Topic summary
+        topic_summary = learning_guidance.get('topic_summary', '')
+        if topic_summary:
+            print(f"📝 {topic_summary}")
+        
+        # Recommended starting point
+        starting_point = learning_guidance.get('recommended_starting_point', '')
+        if starting_point:
+            print(f"\n🚀 RECOMMENDED STARTING POINT:")
+            print(f"   {starting_point}")
+        
+        # Learning paths
+        learning_paths = learning_guidance.get('learning_paths', [])
+        if learning_paths:
+            print(f"\n🛤️  LEARNING PATHS ({len(learning_paths)}):")
+            print("-" * 25)
+            
+            for i, path in enumerate(learning_paths[:5], 1):  # Show first 5 paths
+                print(f"\n  Path {i}: {path.get('name', 'N/A')}")
+                print(f"    Difficulty: {path.get('difficulty', 'N/A')}")
+                print(f"    Estimated Time: {path.get('estimated_hours', 0)} hours")
+                print(f"    Resources: {path.get('resources_count', 0)} items")
+                
+                # Show prerequisites if any
+                prerequisites = path.get('prerequisites', [])
+                if prerequisites:
+                    print(f"    Prerequisites: {', '.join(prerequisites)}")
+                
+                # Show learning objectives
+                objectives = path.get('learning_objectives', [])
+                if objectives:
+                    print(f"    Learning Objectives:")
+                    for obj in objectives[:2]:  # Show first 2 objectives
+                        print(f"      • {obj}")
+        
+        # Instructional guidance details
+        instructional = learning_guidance.get('instructional_guidance', {})
+        if instructional:
+            print(f"\n📚 LEARNING APPROACH:")
+            print("-" * 25)
+            
+            # Overview
+            overview = instructional.get('overview', '')
+            if overview:
+                print(f"📖 {overview}")
+            
+            # Recommended approach
+            approach = instructional.get('recommended_approach', '')
+            if approach:
+                print(f"\n💡 RECOMMENDED APPROACH:")
+                print(f"   {approach}")
+            
+            # Skill levels
+            skill_levels = instructional.get('skill_levels', {})
+            if skill_levels:
+                print(f"\n🎯 SKILL LEVEL RECOMMENDATIONS:")
+                for level, resources in skill_levels.items():
+                    if resources:
+                        print(f"   {level.title()}: {', '.join(resources[:3])}")
+                        if len(resources) > 3:
+                            print(f"      ... and {len(resources) - 3} more")
+            
+            # Learning tips
+            tips = instructional.get('learning_tips', [])
+            if tips:
+                print(f"\n💪 LEARNING TIPS:")
+                for tip in tips[:4]:  # Show first 4 tips
+                    print(f"   • {tip}")
+            
+            # Time commitment
+            time_commitment = instructional.get('time_commitment', {})
+            if time_commitment:
+                print(f"\n⏰ TIME COMMITMENT:")
+                print(f"   Total Hours: {time_commitment.get('total_hours', 0)} hours")
+                print(f"   Weekly Commitment: {time_commitment.get('weekly_hours', 0)} hours/week")
+                print(f"   Estimated Duration: {time_commitment.get('estimated_weeks', 0)} weeks")
+                print(f"   Intensive Pace: {time_commitment.get('intensive_weeks', 0)} weeks")
     
     # Show context summary
     context_summary = parsed_data.get('context_summary', '')
     if context_summary:
-        print(f"\n📝 SUMMARY:")
+        print(f"\n📋 CONTEXT SUMMARY:")
         print(f"{context_summary}")
+    
+    # Show processing metadata
+    metadata = result.get('processing_metadata', {})
+    if metadata:
+        print(f"\n🔧 PROCESSING INFO:")
+        print(f"   Agent Version: {metadata.get('agent_version', 'N/A')}")
+        print(f"   Processing Time: {metadata.get('total_duration_seconds', 0):.2f} seconds")
+        print(f"   Timestamp: {metadata.get('timestamp', 'N/A')}")
+    
+    print(f"\n🎉 Your personalized learning path is ready! Start with the recommended path and track your progress.")
+    print(f"💡 Tip: Focus on hands-on practice and build projects to reinforce your learning.")
 
 def save_results_to_file(result: dict, output_file: str, logger):
     """Save results to a JSON file."""
