@@ -11,6 +11,81 @@ from urllib.parse import urlparse, parse_qs
 from .base import BaseTool
 from ..models import ToolMetadata, ToolError
 
+class YouTubeData(BaseModel):
+    """Comprehensive model for YouTube video data."""
+
+    # Basic video information
+    id: str | None = Field(None, description="Video ID")
+    title: str | None = Field(None, description="Video title")
+    description: str | None = Field(None, description="Video description")
+    duration: int | None = Field(None, description="Video duration in seconds")
+    upload_date: str | None = Field(None, description="Upload date (YYYYMMDD format)")
+    uploader: str | None = Field(None, description="Channel/uploader name")
+    uploader_id: str | None = Field(None, description="Channel/uploader ID")
+    uploader_url: str | None = Field(None, description="Channel/uploader URL")
+    channel: str | None = Field(None, description="Channel name")
+    channel_id: str | None = Field(None, description="Channel ID")
+    channel_url: str | None = Field(None, description="Channel URL")
+
+    # View and engagement metrics
+    view_count: int | None = Field(None, description="Number of views")
+    like_count: int | None = Field(None, description="Number of likes")
+    dislike_count: int | None = Field(None, description="Number of dislikes")
+    comment_count: int | None = Field(None, description="Number of comments")
+    subscriber_count: int | None = Field(None, description="Channel subscriber count")
+
+    # Technical information
+    width: int | None = Field(None, description="Video width in pixels")
+    height: int | None = Field(None, description="Video height in pixels")
+    fps: float | None = Field(None, description="Frames per second")
+    vcodec: str | None = Field(None, description="Video codec")
+    acodec: str | None = Field(None, description="Audio codec")
+    filesize: int | None = Field(None, description="File size in bytes")
+    filesize_approx: int | None = Field(None, description="Approximate file size in bytes")
+
+    # URLs and thumbnails
+    webpage_url: str | None = Field(None, description="Original webpage URL")
+    original_url: str | None = Field(None, description="Original video URL")
+    thumbnail: str | None = Field(None, description="Main thumbnail URL")
+    thumbnails: list[dict[str, Any]] = Field(default_factory=list, description="List of available thumbnails")
+
+    # Categories and tags
+    categories: list[str] = Field(default_factory=list, description="Video categories")
+    tags: list[str] = Field(default_factory=list, description="Video tags")
+    age_limit: int | None = Field(None, description="Age restriction limit")
+
+    # Subtitles and captions
+    subtitles: dict[str, Any] = Field(default_factory=dict, description="Available subtitles")
+    automatic_captions: dict[str, Any] = Field(default_factory=dict, description="Available automatic captions")
+    subtitle_content: dict[str, str] = Field(default_factory=dict, description="Processed subtitle content")
+
+    # Available formats
+    formats: list[dict[str, Any]] = Field(default_factory=list, description="Available video/audio formats")
+    format_id: str | None = Field(None, description="Selected format ID")
+    ext: str | None = Field(None, description="File extension")
+
+    # Playlist information (if applicable)
+    playlist: str | None = Field(None, description="Playlist name")
+    playlist_id: str | None = Field(None, description="Playlist ID")
+    playlist_title: str | None = Field(None, description="Playlist title")
+    playlist_index: int | None = Field(None, description="Position in playlist")
+    playlist_count: int | None = Field(None, description="Total videos in playlist")
+
+    # Additional metadata
+    availability: str | None = Field(None, description="Video availability status")
+    live_status: str | None = Field(None, description="Live stream status")
+    release_timestamp: int | None = Field(None, description="Release timestamp")
+    modified_timestamp: int | None = Field(None, description="Last modified timestamp")
+    location: str | None = Field(None, description="Geographic location")
+    artist: str | None = Field(None, description="Artist name (for music videos)")
+    album: str | None = Field(None, description="Album name (for music videos)")
+    genre: str | None = Field(None, description="Genre")
+
+    # Error handling
+    error: str | None = Field(None, description="Error message if extraction failed")
+    url: str | None = Field(None, description="Original URL that was processed")
+
+
 
 class YouTubeMetadataToolMetadata(ToolMetadata):
     """Metadata for the YouTube Metadata Tool."""
