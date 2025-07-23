@@ -294,7 +294,12 @@ class AwesomeListParser(BaseTool):
                     success="error" not in scraping_result if isinstance(scraping_result, dict) else True
                 )
             
-            if isinstance(scraping_result, dict) and "error" in scraping_result:
+            # Handle ToolError objects properly
+            if hasattr(scraping_result, 'error'):
+                error_msg = scraping_result.error
+                self.logger.warning(f"Web scraping failed: {error_msg}")
+                return {"error": error_msg}
+            elif isinstance(scraping_result, dict) and "error" in scraping_result:
                 self.logger.warning(f"Web scraping failed: {scraping_result['error']}")
                 return {"error": scraping_result["error"]}
             
@@ -347,7 +352,11 @@ class AwesomeListParser(BaseTool):
                             success="error" not in metadata if isinstance(metadata, dict) else True
                         )
                     
-                    if isinstance(metadata, dict) and "error" not in metadata:
+                    # Handle ToolError objects properly
+                    if hasattr(metadata, 'error'):
+                        self.logger.warning(f"Failed to extract metadata for YouTube URL {youtube_url}: {metadata.error}")
+                        continue
+                    elif isinstance(metadata, dict) and "error" not in metadata:
                         youtube_metadata.append(metadata)
                         self.logger.debug(f"Successfully extracted metadata for: {metadata.get('title', 'Unknown')}")
                     else:
@@ -472,8 +481,16 @@ class AwesomeListParser(BaseTool):
             total_views = sum(video.get("view_count", 0) for video in youtube_data)
             avg_duration = sum(video.get("duration_seconds", 0) for video in youtube_data) / len(youtube_data)
             
-            summary_parts.append(f"Found {video_count} YouTube videos with a total of {total_views:,} views.")
-            summary_parts.append(f"Average video duration: {avg_duration/60:.1f} minutes.")
+            summary_parts.append(f"🎥 Found {video_count} YouTube videos with a total of {total_views:,} views.")
+            summary_parts.append(f"📺 Average video duration: {avg_duration/60:.1f} minutes.")
+            
+            # Add sample video titles
+            if video_count > 0:
+                sample_titles = [video.get("title", "Unknown") for video in youtube_data[:3]]
+                if sample_titles:
+                    summary_parts.append(f"📹 Sample videos: {', '.join(sample_titles)}")
+        else:
+            summary_parts.append("📺 No YouTube videos found in this awesome list.")
         
         # Categories and structure
         if "categories" in basic_data and basic_data["categories"]:
@@ -696,5 +713,10 @@ class AwesomeListParser(BaseTool):
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.cleanup()
+    
+    async def cleanup(self):
+        """Clean up resources."""
         if self.session:
             await self.session.close()
+            self.session = None
