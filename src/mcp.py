@@ -1,21 +1,18 @@
 # trunk-ignore-all(ruff/PGH003,trunk/ignore-does-nothing)
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import modal
 from modal import Image
 from pydantic import BaseModel
 
 
-class GithubSearch(BaseModel):
-    query: str
+class Webhook(BaseModel):
+    link: str
     limit: int = 10
 
 
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
-    "chalkpy",
 )
 image.add_local_python_source(
     *[
@@ -38,9 +35,13 @@ app = modal.App(
     docs=True,
 )
 def web(
-    webhook: GithubSearch,
+    webhook: Webhook,
 ) -> str:
-    return ""
+    query: str = webhook.link
+    limit: int = webhook.limit
+    print(query)
+    print(limit)
+    return "github search"
 
 
 @app.local_entrypoint()
