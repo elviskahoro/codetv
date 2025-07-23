@@ -19,6 +19,7 @@ from awesome_list_agent.awesome_list_agent import AwesomeListAgent
 from awesome_list_agent.config import AgentConfiguration, EnvironmentError
 from awesome_list_agent.utils.galileo_logger import GalileoAgentLogger
 
+
 def setup_environment():
     """Set up environment variables and configuration."""
     load_dotenv()
@@ -26,19 +27,26 @@ def setup_environment():
     # Set default Galileo configuration if not already set
     if not os.getenv("GALILEO_API_KEY"):
         print("⚠️  Warning: GALILEO_API_KEY not found in environment variables.")
-        print("   Galileo logging will be disabled. Set GALILEO_API_KEY to enable observability.")
+        print(
+            "   Galileo logging will be disabled. Set GALILEO_API_KEY to enable observability."
+        )
 
     # Set default OpenAI configuration if not already set
     if not os.getenv("OPENAI_API_KEY"):
         print("❌ Error: OPENAI_API_KEY is required but not found.")
-        print("   Please set OPENAI_API_KEY in your .env file or environment variables.")
+        print(
+            "   Please set OPENAI_API_KEY in your .env file or environment variables."
+        )
         sys.exit(1)
+
 
 def get_awesome_list_url() -> str:
     """Get the Awesome List URL from user input."""
     print("\n🚀 Awesome List Agent CLI")
     print("=" * 50)
-    print("This tool will analyze an Awesome List and generate a learning path for you.")
+    print(
+        "This tool will analyze an Awesome List and generate a learning path for you."
+    )
     print("It will extract key information, assess difficulty levels, and provide")
     print("personalized learning recommendations with Galileo observability.\n")
 
@@ -49,33 +57,38 @@ def get_awesome_list_url() -> str:
             print("❌ URL cannot be empty. Please try again.")
             continue
 
-        if not url.startswith(('http://', 'https://')):
+        if not url.startswith(("http://", "https://")):
             print("❌ Please enter a valid URL starting with http:// or https://")
             continue
 
         # Basic URL validation
-        if 'github.com' in url or 'awesome' in url.lower():
+        if "github.com" in url or "awesome" in url.lower():
             return url
         else:
-            confirm = input("⚠️  This doesn't look like a typical Awesome List URL. Continue anyway? (y/N): ").strip().lower()
-            if confirm in ['y', 'yes']:
+            confirm = (
+                input(
+                    "⚠️  This doesn't look like a typical Awesome List URL. Continue anyway? (y/N): "
+                )
+                .strip()
+                .lower()
+            )
+            if confirm in ["y", "yes"]:
                 return url
             else:
                 print("Please enter a different URL.")
+
 
 def create_agent_config() -> AgentConfiguration:
     """Create agent configuration with Galileo logging enabled."""
     try:
         # Create configuration with required API keys
         config = AgentConfiguration.from_env(
-            required_keys=["openai"],
-            optional_keys={"galileo": None}
+            required_keys=["openai"], optional_keys={"galileo": None}
         )
 
         # Override to ensure Galileo logging is enabled
         config = config.with_overrides(
-            enable_logging=True,
-            verbosity="medium"  # Show informative output
+            enable_logging=True, verbosity="medium"  # Show informative output
         )
 
         return config
@@ -83,6 +96,7 @@ def create_agent_config() -> AgentConfiguration:
     except EnvironmentError as e:
         print(f"❌ Configuration Error: {e}")
         sys.exit(1)
+
 
 async def run_agent(url: str):
     """Run the Awesome List Agent with the given URL."""
@@ -97,103 +111,120 @@ async def run_agent(url: str):
         galileo_logger = GalileoAgentLogger(agent_id="awesome_list_cli")
 
         # Create agent with Galileo logging
-        agent = AwesomeListAgent(
-            config=config,
-            logger=galileo_logger
-        )
+        agent = AwesomeListAgent(config=config, logger=galileo_logger)
 
         # Process the awesome list
         result = await agent.process_awesome_list(url)
 
-        
         # Check if processing was successful
         if result.get("status") != "success":
-            print(f"\n❌ Error processing Awesome List: {result.get('error', 'Unknown error')}")
+            print(
+                f"\n❌ Error processing Awesome List: {result.get('error', 'Unknown error')}"
+            )
             return
-        
+
         # Display initial summary
         print("\n" + "=" * 60)
         print("📊 INITIAL ANALYSIS SUMMARY")
         print("=" * 60)
-        
+
         # Display basic information from parsed data
         if "parsed_data" in result:
             parsed_data = result["parsed_data"]
             print(f"\n📋 Topic: {parsed_data.get('topic', 'Awesome List Analysis')}")
             print(f"📚 Total Resources: {parsed_data.get('total_items', 0)}")
             print(f"📂 Categories Found: {len(parsed_data.get('categories', []))}")
-            
+
             # Enhanced YouTube information
-            youtube_videos = parsed_data.get('youtube_metadata', [])
+            youtube_videos = parsed_data.get("youtube_metadata", [])
             youtube_count = len(youtube_videos)
             print(f"🎥 YouTube Videos Found: {youtube_count}")
-            
+
             if youtube_count > 0:
-                print(f"🎬 YouTube Processing: ✅ Explicitly processed {youtube_count} videos")
+                print(
+                    f"🎬 YouTube Processing: ✅ Explicitly processed {youtube_count} videos"
+                )
                 # Show sample video titles
-                sample_titles = [video.get('title', 'Unknown') for video in youtube_videos[:3]]
+                sample_titles = [
+                    video.get("title", "Unknown") for video in youtube_videos[:3]
+                ]
                 print(f"📹 Sample Videos: {', '.join(sample_titles)}")
             else:
-                print(f"🎬 YouTube Processing: ℹ️  No YouTube videos found in this Awesome List")
-            
+                print(
+                    f"🎬 YouTube Processing: ℹ️  No YouTube videos found in this Awesome List"
+                )
+
             # Display comprehensive summary if available
             if "comprehensive_summary" in parsed_data:
                 print(f"\n📖 Summary: {parsed_data['comprehensive_summary']}")
-            
+
             # Display processing metadata
             if "metadata" in result:
                 metadata = result["metadata"]
-                print(f"\n⏱️  Processing Time: {metadata.get('processing_time', 'Unknown')}")
-        
+                print(
+                    f"\n⏱️  Processing Time: {metadata.get('processing_time', 'Unknown')}"
+                )
+
         # Ask for user confirmation
         print("\n" + "=" * 60)
         while True:
-            confirm = input("🤔 Are you ready to see the top 5 recommended YouTube videos? (yes/no): ").strip().lower()
-            if confirm in ['yes', 'y']:
+            confirm = (
+                input(
+                    "🤔 Are you ready to see the top 5 recommended YouTube videos? (yes/no): "
+                )
+                .strip()
+                .lower()
+            )
+            if confirm in ["yes", "y"]:
                 break
-            elif confirm in ['no', 'n']:
+            elif confirm in ["no", "n"]:
                 print("\n👋 Thanks for using Awesome List Agent! Goodbye!")
                 return
             else:
                 print("❌ Please enter 'yes' or 'no'.")
-        
+
         # Display top 5 recommended YouTube videos
         print("\n" + "=" * 60)
         print("🎬 TOP 5 RECOMMENDED YOUTUBE VIDEOS")
         print("=" * 60)
-        
+
         if "parsed_data" in result and "youtube_metadata" in result["parsed_data"]:
             youtube_videos = result["parsed_data"]["youtube_metadata"]
-            
+
             if not youtube_videos:
                 print("\n❌ No YouTube videos found in this Awesome List.")
                 return
-            
+
             # Sort videos by view count and duration to get the most popular/valuable ones
             sorted_videos = sorted(
-                youtube_videos, 
-                key=lambda x: (x.get('view_count', 0), -(x.get('duration_seconds', 0))), 
-                reverse=True
+                youtube_videos,
+                key=lambda x: (x.get("view_count", 0), -(x.get("duration_seconds", 0))),
+                reverse=True,
             )
-            
+
             # Display top 5 videos
             top_5_videos = sorted_videos[:5]
-            
+
             for i, video in enumerate(top_5_videos, 1):
                 print(f"\n{i}. 🎥 {video.get('title', 'Unknown Title')}")
                 print(f"   👤 Channel: {video.get('channel_name', 'Unknown Channel')}")
                 print(f"   👀 Views: {video.get('view_count', 0):,}")
-                print(f"   ⏱️  Duration: {video.get('duration_seconds', 0) // 60}:{video.get('duration_seconds', 0) % 60:02d}")
+                print(
+                    f"   ⏱️  Duration: {video.get('duration_seconds', 0) // 60}:{video.get('duration_seconds', 0) % 60:02d}"
+                )
                 print(f"   📅 Published: {video.get('published_date', 'Unknown')}")
                 print(f"   🔗 Watch Now: {video.get('url', 'No URL available')}")
-                
-                # Add description if available
-                if video.get('description'):
-                    desc = video['description'][:100] + "..." if len(video['description']) > 100 else video['description']
-                    print(f"   📝 {desc}")
-        
-        # Display additional analysis results
 
+                # Add description if available
+                if video.get("description"):
+                    desc = (
+                        video["description"][:100] + "..."
+                        if len(video["description"]) > 100
+                        else video["description"]
+                    )
+                    print(f"   📝 {desc}")
+
+        # Display additional analysis results
 
         # Display results
 
@@ -204,21 +235,29 @@ async def run_agent(url: str):
         # Display learning path
         if "learning_path" in result:
             learning_path = result["learning_path"]
-            print(f"\n📚 Learning Path: {learning_path.get('title', 'Awesome List Learning Journey')}")
-            print(f"🎯 Difficulty Level: {learning_path.get('difficulty', 'Intermediate')}")
-            print(f"⏱️  Estimated Time: {learning_path.get('estimated_time', '2-4 weeks')}")
+            print(
+                f"\n📚 Learning Path: {learning_path.get('title', 'Awesome List Learning Journey')}"
+            )
+            print(
+                f"🎯 Difficulty Level: {learning_path.get('difficulty', 'Intermediate')}"
+            )
+            print(
+                f"⏱️  Estimated Time: {learning_path.get('estimated_time', '2-4 weeks')}"
+            )
             print(f"📊 Total Resources: {learning_path.get('total_resources', 0)}")
-            print(f"💻 Primary Language: {learning_path.get('primary_language', 'General')}")
+            print(
+                f"💻 Primary Language: {learning_path.get('primary_language', 'General')}"
+            )
 
             if "steps" in learning_path:
                 print(f"\n📋 Learning Steps ({len(learning_path['steps'])} total):")
                 for i, step in enumerate(learning_path["steps"], 1):
                     print(f"  {i}. {step.get('title', 'Learning step')}")
-                    if step.get('description'):
+                    if step.get("description"):
                         print(f"     💡 {step['description']}")
-                    if step.get('estimated_time'):
+                    if step.get("estimated_time"):
                         print(f"     ⏱️  {step['estimated_time']}")
-                    if step.get('resources_count'):
+                    if step.get("resources_count"):
                         print(f"     📚 ~{step['resources_count']} resources")
                     print()
 
@@ -239,7 +278,9 @@ async def run_agent(url: str):
                     print(f"   • {area}")
 
             if "recommended_starting_point" in guidance:
-                print(f"\n🚀 Recommended Starting Point: {guidance['recommended_starting_point']}")
+                print(
+                    f"\n🚀 Recommended Starting Point: {guidance['recommended_starting_point']}"
+                )
 
         # Display comprehensive summary from parsed data
         if "parsed_data" in result and "comprehensive_summary" in result["parsed_data"]:
@@ -250,9 +291,15 @@ async def run_agent(url: str):
         if "metadata" in result:
             metadata = result["metadata"]
             print(f"\n📊 Processing Summary:")
-            print(f"   • Total items processed: {metadata.get('total_items', 'Unknown')}")
-            print(f"   • Categories found: {metadata.get('categories_count', 'Unknown')}")
-            print(f"   • YouTube videos analyzed: {metadata.get('youtube_videos_count', 'Unknown')}")
+            print(
+                f"   • Total items processed: {metadata.get('total_items', 'Unknown')}"
+            )
+            print(
+                f"   • Categories found: {metadata.get('categories_count', 'Unknown')}"
+            )
+            print(
+                f"   • YouTube videos analyzed: {metadata.get('youtube_videos_count', 'Unknown')}"
+            )
             print(f"   • Processing time: {metadata.get('processing_time', 'Unknown')}")
             print(f"   • Galileo trace ID: {metadata.get('trace_id', 'Not available')}")
 
@@ -263,17 +310,23 @@ async def run_agent(url: str):
             if mcp_status == "success":
                 print(f"\n🔗 MCP Server: ✅ Successfully processed")
             else:
-                print(f"\n🔗 MCP Server: ⚠️  {mcp_result.get('message', 'Unknown status')}")
+                print(
+                    f"\n🔗 MCP Server: ⚠️  {mcp_result.get('message', 'Unknown status')}"
+                )
 
-        print("\n✅ Processing complete! Check your Galileo dashboard for detailed observability data.")
+        print(
+            "\n✅ Processing complete! Check your Galileo dashboard for detailed observability data."
+        )
 
     except Exception as e:
         print(f"\n❌ Error processing Awesome List: {str(e)}")
         print("Please check your internet connection and try again.")
-        if hasattr(e, '__traceback__'):
+        if hasattr(e, "__traceback__"):
             import traceback
+
             print("\nDetailed error information:")
             traceback.print_exc()
+
 
 def main():
     """Main CLI entry point."""
@@ -293,6 +346,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Unexpected error: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
