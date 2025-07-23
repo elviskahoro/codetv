@@ -232,7 +232,7 @@ This agent is perfect for:
         # Register markdown YouTube extractor tool
         self.markdown_youtube_extractor_tool = MarkdownYouTubeExtractorTool()
         self.tool_registry.register(
-            metadata=MarkdownYouTubeExtractorTool.metadata,
+            metadata=MarkdownYouTubeExtractorTool.get_metadata(),
             implementation=MarkdownYouTubeExtractorTool,
         )
         self.logger.debug("Registered markdown_youtube_extractor_tool")
