@@ -4,6 +4,7 @@ from .tools.youtube_metadata_tool import YouTubeMetadataTool
 from .tools.web_scraping_tool import WebScrapingTool
 from .tools.content_analysis_tool import ContentAnalysisTool
 from .llm.models import LLMMessage
+from .tools.markdown_youtube_extractor_tool import MarkdownYouTubeExtractorTool
 from typing import Any, Dict, List, Optional
 import uuid
 import logging
@@ -54,23 +55,29 @@ You provide comprehensive results including:
 
 You are designed to be the ultimate tool for processing and understanding Awesome Lists, making them more accessible and valuable for users seeking curated learning resources."""
 
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Set up logger - use the injected logger or create a default one
         if self.logger:
             self.logger = self.logger
         else:
             self.logger = logging.getLogger("awesome_list_agent.AwesomeListAgent")
+
         
         # Log agent initialization with system prompt context
         self.logger.info("Initializing AwesomeListAgent with specialized Awesome List processing capabilities")
         self.logger.info(f"Agent ID: {self.agent_id}")
         self.logger.info("System Purpose: Process and analyze Awesome Lists with comprehensive tool integration")
         
+
+        # Log agent initialization
+        self.logger.info("Initializing AwesomeListAgent")
+
         # Register all tools
         self._register_tools()
-        
+
         # Set up Galileo hooks if logger supports it
         if hasattr(self.logger, '_setup_logger'):
             self.logger._setup_logger(self.logger)
@@ -195,7 +202,7 @@ This agent is perfect for:
             implementation=AwesomeListParser
         )
         self.logger.debug("Registered awesome_list_parser tool")
-        
+
         # Register YouTube metadata tool
         self.youtube_tool = YouTubeMetadataTool()
         self.tool_registry.register(
@@ -203,7 +210,7 @@ This agent is perfect for:
             implementation=YouTubeMetadataTool
         )
         self.logger.debug("Registered youtube_metadata_tool")
-        
+
         # Register web scraping tool
         self.web_scraping_tool = WebScrapingTool()
         self.tool_registry.register(
@@ -211,7 +218,7 @@ This agent is perfect for:
             implementation=WebScrapingTool
         )
         self.logger.debug("Registered web_scraping_tool")
-        
+
         # Register content analysis tool
         self.content_analysis_tool = ContentAnalysisTool()
         self.tool_registry.register(
@@ -219,6 +226,14 @@ This agent is perfect for:
             implementation=ContentAnalysisTool
         )
         self.logger.debug("Registered content_analysis_tool")
+
+        # Register markdown YouTube extractor tool
+        self.markdown_youtube_extractor_tool = MarkdownYouTubeExtractorTool()
+        self.tool_registry.register(
+            metadata=MarkdownYouTubeExtractorTool.metadata,
+            implementation=MarkdownYouTubeExtractorTool
+        )
+        self.logger.debug("Registered markdown_youtube_extractor_tool")
 
     async def process_awesome_list(self, url: str) -> Dict[str, Any]:
         """Process an Awesome List URL to extract comprehensive information.
@@ -231,10 +246,11 @@ This agent is perfect for:
         """
         import time
         start_time = time.time()
-        
+
         # Start Galileo trace if logger supports it
         if hasattr(self.logger, 'start_trace'):
             self.logger.start_trace(f"process_awesome_list_{url.split('/')[-1]}")
+
         
         # Log agent purpose and system prompt context
         self.logger.info("🎯 AwesomeListAgent Starting Processing")
@@ -244,7 +260,7 @@ This agent is perfect for:
         self.logger.info(f"📊 System Prompt Length: {len(self.SYSTEM_PROMPT)} characters")
         
         self.logger.info(f"Starting to process Awesome List URL: {url}")
-        
+
         try:
             # Step 1: Explicitly call web scraping tool for comprehensive content analysis
             self.logger.info("Step 1: Executing explicit web scraping analysis")
@@ -291,8 +307,15 @@ This agent is perfect for:
             if hasattr(self.logger, 'add_tool_span'):
                 parser_start_time = time.time()
             
+            # Step 1: Parse the awesome list using our comprehensive parser
+            self.logger.info("Executing comprehensive awesome list parser")
+
+            # Add tool span for parser execution
+            if hasattr(self.logger, 'add_tool_span'):
+                tool_start_time = time.time()
+
             parsed_data = await self.parser.execute(url)
-            
+
             # Log tool execution span
             if hasattr(self.logger, 'add_tool_span'):
                 parser_duration = (time.time() - parser_start_time) * 1_000_000_000  # Convert to nanoseconds
@@ -303,33 +326,33 @@ This agent is perfect for:
                     duration_ns=int(parser_duration),
                     success="error" not in parsed_data if isinstance(parsed_data, dict) else True
                 )
-            
+
             self.logger.debug(f"Parser returned comprehensive data: {parsed_data}")
-            
+
             # Check if parsing was successful
             if isinstance(parsed_data, dict) and "error" in parsed_data:
                 self.logger.error(f"Parser failed with error: {parsed_data['error']}")
-                
+
                 # Conclude trace with error
                 if hasattr(self.logger, 'conclude_trace'):
                     total_duration = (time.time() - start_time) * 1_000_000_000
                     self.logger.conclude_trace(
-                        output=f"Error: {parsed_data['error']}", 
+                        output=f"Error: {parsed_data['error']}",
                         duration_ns=int(total_duration)
                     )
-                
+
                 return {
                     "status": "error",
                     "error": parsed_data["error"],
                     "url": url
                 }
-            
+
             # Log successful parsing
             if isinstance(parsed_data, dict):
                 self.logger.info(f"Successfully parsed list - Topic: {parsed_data.get('topic', 'N/A')}")
                 self.logger.info(f"Found {parsed_data.get('total_items', 0)} items")
                 self.logger.info(f"Detected {len(parsed_data.get('categories', []))} categories")
-                
+
                 youtube_count = len(parsed_data.get('youtube_metadata', []))
                 self.logger.info(f"🎥 Extracted {youtube_count} YouTube videos")
                 if youtube_count > 0:
@@ -397,7 +420,7 @@ This agent is perfect for:
                 if isinstance(parsed_data, dict):
                     parsed_data["youtube_metadata"] = enhanced_youtube_metadata
                     self.logger.info(f"🎬 Enhanced YouTube metadata with {len(enhanced_youtube_metadata)} videos")
-            
+
             # Combine all results into final result
             youtube_count = len(parsed_data.get("youtube_metadata", []))
             result = {
@@ -427,7 +450,7 @@ This agent is perfect for:
                     "trace_id": f"trace_{int(start_time)}" if hasattr(self.logger, 'start_trace') else "Not available"
                 }
             }
-            
+
             # Conclude trace with success
             if hasattr(self.logger, 'conclude_trace'):
                 total_duration = (time.time() - start_time) * 1_000_000_000
@@ -435,18 +458,18 @@ This agent is perfect for:
                     output=f"Successfully processed {url}",
                     duration_ns=int(total_duration)
                 )
-            
+
             self.logger.info(f"Successfully completed processing of Awesome List: {url}")
-            
+
             # Clean up resources
             await self._cleanup_resources()
-            
+
             return result
-            
+
         except Exception as e:
             error_msg = f"Unexpected error processing Awesome List: {str(e)}"
             self.logger.error(error_msg, exc_info=True)
-            
+
             # Conclude trace with error
             if hasattr(self.logger, 'conclude_trace'):
                 total_duration = (time.time() - start_time) * 1_000_000_000
@@ -454,29 +477,29 @@ This agent is perfect for:
                     output=f"Error: {error_msg}",
                     duration_ns=int(total_duration)
                 )
-            
+
             # Clean up resources even on error
             await self._cleanup_resources()
-            
+
             return {
                 "status": "error",
                 "error": error_msg,
                 "url": url
             }
-    
+
     async def _format_result(self, task: str, results: List[tuple[str, Dict[str, Any]]]) -> str:
         """Format the final result from tool executions.
-        
+
         Args:
             task: The original task string
             results: List of (tool_name, result) tuples
-            
+
         Returns:
             Formatted result string
         """
         if not results:
             return "No results from tool execution"
-        
+
         formatted_parts = []
         for tool_name, result in results:
             if isinstance(result, dict) and "error" not in result:
@@ -485,21 +508,20 @@ This agent is perfect for:
                     formatted_parts.append(f"Summary: {result['comprehensive_summary']}")
             else:
                 formatted_parts.append(f"Tool '{tool_name}' encountered an error")
-        
+
         return "\n".join(formatted_parts)
-    
+
     async def _cleanup_resources(self):
         """Clean up resources used by the agent."""
         try:
             # Clean up parser resources
             if hasattr(self, 'parser') and hasattr(self.parser, 'cleanup'):
                 await self.parser.cleanup()
-            
+
             # Clean up other tool resources
-            for tool_name in ['youtube_tool', 'web_scraping_tool', 'content_analysis_tool']:
+            for tool_name in ['youtube_tool', 'web_scraping_tool', 'content_analysis_tool', 'markdown_youtube_extractor_tool']:
                 if hasattr(self, tool_name) and hasattr(getattr(self, tool_name), 'cleanup'):
                     await getattr(self, tool_name).cleanup()
-                    
+
         except Exception as e:
             self.logger.warning(f"Error during cleanup: {str(e)}")
-
