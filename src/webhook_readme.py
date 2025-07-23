@@ -39,7 +39,7 @@ class WebhookOutput(BaseModel):
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "yt-dlp",
-    "firecrawl-py",
+    "firecrawl-py==1.5.0",
 )
 image.add_local_python_source(
     *[
