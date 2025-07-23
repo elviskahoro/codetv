@@ -90,8 +90,8 @@ def web(
 
 @app.local_entrypoint()
 def local() -> None:
-    print("test")
-    youtube_data = get_youtube_info(
+    print("Starting pipeline")
+    youtube_data: YouTubeData = get_youtube_info(
         url=DEFAULT_YOUTUBE_VIDEO,
     )
     print(f"Successfully extracted data for: {youtube_data.title}")
