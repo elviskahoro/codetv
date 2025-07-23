@@ -129,6 +129,7 @@ class AwesomeListAgent(Agent):
                 self.logger.info(f"Found {parsed_data.get('total_items', 0)} items")
                 self.logger.info(f"Detected {len(parsed_data.get('categories', []))} categories")
             
+            # TODO: Implement MCP server call
             # Step 2: Call MCP server
             self.logger.info("Calling MCP server")
             
@@ -188,6 +189,7 @@ class AwesomeListAgent(Agent):
                 "url": url
             }
 
+    # TODO: Implement MCP server call
     async def call_mcp_server(self, url: str, context_summary: str) -> Dict[str, Any]:
         """Call the MCP server with the URL and context information.
 
