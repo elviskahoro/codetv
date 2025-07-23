@@ -29,6 +29,7 @@ image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
     "yt-dlp",
     "firecrawl-py",
+    "tempfile",
 )
 image.add_local_python_source(
     *[
