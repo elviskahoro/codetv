@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, AsyncGenerator, Type, TypeVar
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 import os
+import time
 from dotenv import load_dotenv
 
 from .base import LLMProvider
@@ -62,24 +63,66 @@ class OpenAIProvider(LLMProvider):
     async def generate(
         self,
         messages: List[LLMMessage],
-        config: Optional[LLMConfig] = None
+        config: Optional[LLMConfig] = None,
+        logger=None
     ) -> LLMResponse:
-        """Generate a response using OpenAI"""
+        """Generate a response using OpenAI with optional Galileo logging"""
         openai_messages = self._prepare_messages(messages)
         api_config = self._prepare_config(config)
         
-        response = await self.client.chat.completions.create(
-            messages=openai_messages,
-            **api_config
-        )
+        # Get the input text for logging
+        input_text = "\n".join([f"{msg.role}: {msg.content}" for msg in messages])
         
-        choice = response.choices[0]
-        return LLMResponse(
-            content=choice.message.content,
-            raw_response=response.model_dump(),
-            finish_reason=choice.finish_reason,
-            usage=response.usage.model_dump() if response.usage else None
-        )
+        # Time the LLM call
+        start_ns = time.perf_counter_ns()
+        
+        try:
+            response = await self.client.chat.completions.create(
+                messages=openai_messages,
+                **api_config
+            )
+            
+            # Calculate duration
+            duration_ns = time.perf_counter_ns() - start_ns
+            
+            choice = response.choices[0]
+            output_text = choice.message.content or ""
+            
+            # Log to Galileo if logger is provided
+            if logger and hasattr(logger, 'add_llm_span'):
+                logger.add_llm_span(
+                    input_text=input_text,
+                    output_text=output_text,
+                    model=api_config.get("model", "unknown"),
+                    name=f"OpenAI {api_config.get('model', 'unknown')} completion",
+                    num_input_tokens=response.usage.prompt_tokens if response.usage else None,
+                    num_output_tokens=response.usage.completion_tokens if response.usage else None,
+                    total_tokens=response.usage.total_tokens if response.usage else None,
+                    duration_ns=duration_ns
+                )
+            
+            return LLMResponse(
+                content=output_text,
+                raw_response=response.model_dump(),
+                finish_reason=choice.finish_reason,
+                usage=response.usage.model_dump() if response.usage else None
+            )
+            
+        except Exception as e:
+            # Calculate duration even on error
+            duration_ns = time.perf_counter_ns() - start_ns
+            
+            # Log error to Galileo if logger is provided
+            if logger and hasattr(logger, 'add_llm_span'):
+                logger.add_llm_span(
+                    input_text=input_text,
+                    output_text=f"Error: {str(e)}",
+                    model=api_config.get("model", "unknown"),
+                    name=f"OpenAI {api_config.get('model', 'unknown')} error",
+                    duration_ns=duration_ns
+                )
+            
+            raise
 
     async def generate_stream(
         self,
@@ -108,11 +151,18 @@ class OpenAIProvider(LLMProvider):
         self,
         messages: List[LLMMessage],
         output_model: Type[T],
-        config: Optional[LLMConfig] = None
+        config: Optional[LLMConfig] = None,
+        logger=None
     ) -> T:
         """Generate a response with structured output using function calling"""
         openai_messages = self._prepare_messages(messages)
         api_config = self._prepare_config(config)
+        
+        # Get the input text for logging
+        input_text = "\n".join([f"{msg.role}: {msg.content}" for msg in messages])
+        
+        # Time the LLM call
+        start_ns = time.perf_counter_ns()
         
         # Create function definition from Pydantic model
         schema = output_model.model_json_schema()
@@ -122,15 +172,61 @@ class OpenAIProvider(LLMProvider):
             "parameters": schema
         }
         
-        response = await self.client.chat.completions.create(
-            messages=openai_messages,
-            functions=[function_def],
-            function_call={"name": "output_structured_data"},
-            **api_config
-        )
-        
         try:
-            function_args = response.choices[0].message.function_call.arguments
-            return output_model.model_validate_json(function_args)
+            response = await self.client.chat.completions.create(
+                messages=openai_messages,
+                functions=[function_def],
+                function_call={"name": "output_structured_data"},
+                **api_config
+            )
+            
+            # Calculate duration
+            duration_ns = time.perf_counter_ns() - start_ns
+            
+            try:
+                function_args = response.choices[0].message.function_call.arguments
+                result = output_model.model_validate_json(function_args)
+                
+                # Log to Galileo if logger is provided
+                if logger and hasattr(logger, 'add_llm_span'):
+                    logger.add_llm_span(
+                        input_text=input_text,
+                        output_text=function_args,
+                        model=api_config.get("model", "unknown"),
+                        name=f"OpenAI {api_config.get('model', 'unknown')} structured completion",
+                        num_input_tokens=response.usage.prompt_tokens if response.usage else None,
+                        num_output_tokens=response.usage.completion_tokens if response.usage else None,
+                        total_tokens=response.usage.total_tokens if response.usage else None,
+                        duration_ns=duration_ns
+                    )
+                
+                return result
+                
+            except Exception as e:
+                # Log parsing error to Galileo if logger is provided
+                if logger and hasattr(logger, 'add_llm_span'):
+                    logger.add_llm_span(
+                        input_text=input_text,
+                        output_text=f"Parsing Error: {str(e)}",
+                        model=api_config.get("model", "unknown"),
+                        name=f"OpenAI {api_config.get('model', 'unknown')} parsing error",
+                        duration_ns=duration_ns
+                    )
+                
+                raise ValueError(f"Failed to parse structured output: {e}")
+                
         except Exception as e:
-            raise ValueError(f"Failed to parse structured output: {e}") 
+            # Calculate duration even on error
+            duration_ns = time.perf_counter_ns() - start_ns
+            
+            # Log error to Galileo if logger is provided
+            if logger and hasattr(logger, 'add_llm_span'):
+                logger.add_llm_span(
+                    input_text=input_text,
+                    output_text=f"Error: {str(e)}",
+                    model=api_config.get("model", "unknown"),
+                    name=f"OpenAI {api_config.get('model', 'unknown')} error",
+                    duration_ns=duration_ns
+                )
+            
+            raise 

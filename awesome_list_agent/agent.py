@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 from datetime import datetime
+import time
 from .utils.logging import AgentLogger
 from .utils.tool_registry import ToolRegistry
 
@@ -131,16 +132,46 @@ class Agent(ABC):
         tool_impl = self.tool_registry.get_implementation(tool_name)
         if not tool_impl:
             raise ToolNotFoundError(f"No implementation found for tool: {tool_name}")
-            
+        
+        # Time the tool execution
+        start_ns = time.perf_counter_ns()
+        
         try:
             tool_instance = tool_impl()
             result = await tool_instance.execute(**inputs)
             
+            # Calculate duration
+            duration_ns = time.perf_counter_ns() - start_ns
+            
             # Store result in state
             self.state.set_tool_result(tool_name, result)
             
+            # Log tool execution to Galileo if logger is available
+            if self.logger and hasattr(self.logger, 'add_tool_span'):
+                self.logger.add_tool_span(
+                    tool_name=tool_name,
+                    inputs=inputs,
+                    outputs=result,
+                    duration_ns=duration_ns,
+                    success=True
+                )
+            
             return result
         except Exception as e:
+            # Calculate duration even on error
+            duration_ns = time.perf_counter_ns() - start_ns
+            
+            # Log tool error to Galileo if logger is available
+            if self.logger and hasattr(self.logger, 'add_tool_span'):
+                self.logger.add_tool_span(
+                    tool_name=tool_name,
+                    inputs=inputs,
+                    outputs=None,
+                    duration_ns=duration_ns,
+                    success=False,
+                    error=str(e)
+                )
+            
             raise ToolExecutionError(tool_name, e)
 
     def _create_planning_prompt(self, task: str) -> List[LLMMessage]:
@@ -216,7 +247,8 @@ class Agent(ABC):
             plan: TaskAnalysis = await self.llm_provider.generate_structured(
                 messages,
                 TaskAnalysis,
-                self.llm_provider.config
+                self.llm_provider.config,
+                logger=self.logger
             )
             
             # Log the planning response
