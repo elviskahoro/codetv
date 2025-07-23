@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import modal
 from modal import Image
-from pydantic import BaseModel, RootModel
-from enum import Enum
+from pydantic import BaseModel
 
-from get_youtube import YouTubeDownloader, YouTubeData
+from get_youtube import YouTubeData
 from get_readme import firecrawl_markdown
 
 DEFAULT_MARKDOWN_URL: str = (
@@ -33,8 +32,8 @@ def firecrawl_markdown(
 class WebhookInput(BaseModel):
     link: str
 
-class WebhookOutput(RootModel):
-    root: list[str]
+class WebhookOutput(BaseModel):
+    data: list[str]
 
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -71,7 +70,7 @@ def web(
     )
     urls: list[str] = extract_youtube_urls_from_markdown(markdown)
     print(urls)
-    return WebhookOutput(root=urls)
+    return WebhookOutput(data=urls)
 
 
 @app.local_entrypoint()
@@ -82,4 +81,4 @@ def local() -> None:
     )
     urls: list[str] = extract_youtube_urls_from_markdown(markdown)
     print(urls)
-    return WebhookOutput(root=urls)
+    return WebhookOutput(data=urls)

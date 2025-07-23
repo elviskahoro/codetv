@@ -8,21 +8,20 @@ from enum import Enum
 
 from get_youtube import YouTubeDownloader, YouTubeData
 
-class TranscriptOrMetadata(Enum):
+class YoutubeDataType(Enum):
+    default = "default"
     transcript = "transcript"
     metadata = "metadata"
 
 DEFAULT_YOUTUBE_VIDEO: str = (
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 )
-DEFAULT_TRANSCRIPT_OR_METADATA: TranscriptOrMetadata = TranscriptOrMetadata.metadata
-
-
+DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.transcript
 
 
 class Webhook(BaseModel):
     link: str
-    transcript_or_metadata: TranscriptOrMetadata = TranscriptOrMetadata.metadata
+    transcript_or_metadata: YoutubeDataType = YoutubeDataType.metadata
 
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -43,13 +42,17 @@ app = modal.App(
 
 def get_youtube_info(
     url: str,
-    transcript_or_metadata: TranscriptOrMetadata,
-) -> YouTubeData:
+    transcript_or_metadata: YoutubeDataType,
+) -> YouTubeData | dict[str, Any]:
     downloader = YouTubeDownloader()
-    if transcript_or_metadata == TranscriptOrMetadata.metadata:
-        youtube_data = downloader.get_metadata_only(url)
-    else:
-        youtube_data = downloader.get_all_info(url)
+    match transcript_or_metadata:
+        case YoutubeDataType.default:
+            youtube_data = downloader.get_all_info(url)
+        case YoutubeDataType.transcript:
+            youtube_data = downloader.get_transcript(url)
+        case YoutubeDataType.metadata:
+            youtube_data = downloader.get_metadata_only(url)
+
     return youtube_data
 
 
@@ -66,11 +69,12 @@ def web(
     webhook: Webhook,
 ) -> YouTubeData:
     link: str = webhook.link
-    transcript_or_metadata: TranscriptOrMetadata = webhook.transcript_or_metadata
+    transcript_or_metadata: YoutubeDataType = webhook.transcript_or_metadata
     print(link)
     print(transcript_or_metadata)
     return get_youtube_info(
         url=link,
+        transcript_or_metadata=transcript_or_metadata,
     )
 
 
@@ -82,9 +86,4 @@ def local() -> None:
         transcript_or_metadata=DEFAULT_TRANSCRIPT_OR_METADATA,
     )
     print(youtube_data)
-
-    # audio_data: Dict[str, Any] = download_youtube_audio_to_memory(
-    #     url=DEFAULT_YOUTUBE_VIDEO,
-    # )
-    # print(f"Successfully extracted data for: {youtube_data.title}")
 
