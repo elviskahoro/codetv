@@ -83,23 +83,61 @@ class AwesomeListAgent(Agent):
         self.logger.info(f"Starting to process Awesome List URL: {url}")
         
         try:
-            # Step 1: Parse the awesome list using our comprehensive parser
-            self.logger.info("Executing comprehensive awesome list parser")
+            # Step 1: Explicitly call web scraping tool for comprehensive content analysis
+            self.logger.info("Step 1: Executing explicit web scraping analysis")
+            
+            # Add tool span for explicit web scraping execution
+            if hasattr(self.logger, 'add_tool_span'):
+                web_scraping_start_time = time.time()
+            
+            # Explicitly call web scraping tool from the main agent
+            web_scraping_result = await self.web_scraping_tool.execute(
+                url=url,
+                extract_text=True,
+                extract_links=True,
+                extract_images=False,
+                extract_metadata=True,
+                max_links=100,  # Get comprehensive link analysis
+                timeout=30
+            )
+            
+            # Log explicit web scraping tool execution span
+            if hasattr(self.logger, 'add_tool_span'):
+                web_scraping_duration = (time.time() - web_scraping_start_time) * 1_000_000_000
+                self.logger.add_tool_span(
+                    tool_name="explicit_web_scraping_tool",
+                    inputs={"url": url, "extract_text": True, "extract_links": True, "max_links": 100},
+                    outputs=web_scraping_result,
+                    duration_ns=int(web_scraping_duration),
+                    success="error" not in web_scraping_result if isinstance(web_scraping_result, dict) else True
+                )
+            
+            # Log web scraping results
+            if isinstance(web_scraping_result, dict) and "error" not in web_scraping_result:
+                self.logger.info(f"✅ Explicit web scraping completed successfully")
+                self.logger.info(f"📄 Found {len(web_scraping_result.get('text_content', ''))} characters of text")
+                self.logger.info(f"🔗 Extracted {len(web_scraping_result.get('links', []))} links")
+                self.logger.info(f"📊 Found {len(web_scraping_result.get('metadata', {}))} metadata fields")
+            else:
+                self.logger.warning(f"⚠️ Explicit web scraping encountered issues: {web_scraping_result.get('error', 'Unknown error')}")
+            
+            # Step 2: Parse the awesome list using our comprehensive parser
+            self.logger.info("Step 2: Executing comprehensive awesome list parser")
             
             # Add tool span for parser execution
             if hasattr(self.logger, 'add_tool_span'):
-                tool_start_time = time.time()
+                parser_start_time = time.time()
             
             parsed_data = await self.parser.execute(url)
             
             # Log tool execution span
             if hasattr(self.logger, 'add_tool_span'):
-                tool_duration = (time.time() - tool_start_time) * 1_000_000_000  # Convert to nanoseconds
+                parser_duration = (time.time() - parser_start_time) * 1_000_000_000  # Convert to nanoseconds
                 self.logger.add_tool_span(
                     tool_name="awesome_list_parser",
                     inputs={"url": url},
                     outputs=parsed_data,
-                    duration_ns=int(tool_duration),
+                    duration_ns=int(parser_duration),
                     success="error" not in parsed_data if isinstance(parsed_data, dict) else True
                 )
             
@@ -141,6 +179,15 @@ class AwesomeListAgent(Agent):
                 "status": "success",
                 "url": url,
                 "parsed_data": parsed_data,
+                "explicit_web_scraping": {
+                    "status": "success" if isinstance(web_scraping_result, dict) and "error" not in web_scraping_result else "error",
+                    "data": web_scraping_result,
+                    "summary": {
+                        "text_length": len(web_scraping_result.get('text_content', '')) if isinstance(web_scraping_result, dict) else 0,
+                        "links_count": len(web_scraping_result.get('links', [])) if isinstance(web_scraping_result, dict) else 0,
+                        "metadata_count": len(web_scraping_result.get('metadata', {})) if isinstance(web_scraping_result, dict) else 0
+                    }
+                },
                 "youtube_summary": {
                     "video_count": youtube_count,
                     "videos": parsed_data.get("youtube_metadata", [])[:5],  # Include first 5 videos
