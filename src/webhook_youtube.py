@@ -14,9 +14,9 @@ class YoutubeDataType(Enum):
     metadata = "metadata"
 
 DEFAULT_YOUTUBE_VIDEO: str = (
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 )
-DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.transcript
+DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.metadata
 
 
 class Webhook(BaseModel):
