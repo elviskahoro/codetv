@@ -5,7 +5,8 @@ import modal
 from modal import Image
 from pydantic import BaseModel
 from enum import Enum
-
+import yt_dlp
+from yt_dlp import YoutubeDL
 
 class TranscriptOrMetadata(Enum):
     transcript = "transcript"
@@ -19,6 +20,8 @@ class Webhook(BaseModel):
 
 image: Image = modal.Image.debian_slim().pip_install(
     "fastapi[standard]",
+    "yt_dlp",
+    "firecrawl-py",
 )
 image.add_local_python_source(
     *[
