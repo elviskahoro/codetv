@@ -5,8 +5,6 @@ import modal
 from modal import Image
 from pydantic import BaseModel
 from enum import Enum
-import yt_dlp
-from yt_dlp import YoutubeDL
 
 from get_youtube import YouTubeDownloader, YouTubeData
 
