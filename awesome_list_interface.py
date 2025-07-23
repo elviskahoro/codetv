@@ -4,9 +4,10 @@ import asyncio
 import sys
 import json
 import argparse
+import os
 from datetime import datetime
 from pathlib import Path
-from awesome_list_agent.awesome_list_agent import AwesomeListAgent
+from awesome_list_agent.factory import AwesomeListAgentFactory
 from awesome_list_logging import setup_logging
 
 def parse_arguments():
@@ -17,6 +18,7 @@ def parse_arguments():
         epilog="""Examples:
   python awesome_list_interface.py https://github.com/sindresorhus/awesome
   python awesome_list_interface.py --log-level DEBUG --output-file results.json https://github.com/vinta/awesome-python
+  python awesome_list_interface.py --enable-galileo https://github.com/sindresorhus/awesome
         """
     )
     
@@ -48,6 +50,19 @@ def parse_arguments():
         help="Suppress console output (logs still written to file)"
     )
     
+    parser.add_argument(
+        "--enable-galileo",
+        action="store_true",
+        help="Enable Galileo observability logging"
+    )
+    
+    parser.add_argument(
+        "--verbosity",
+        choices=["none", "low", "high"],
+        default="low",
+        help="Set agent verbosity level (default: low)"
+    )
+    
     return parser.parse_args()
 
 async def main():
@@ -67,19 +82,29 @@ async def main():
     logger.info(f"Timestamp: {datetime.now().isoformat()}")
     logger.info(f"Input URL: {args.url}")
     logger.info(f"Log Level: {args.log_level}")
+    logger.info(f"Verbosity: {args.verbosity}")
+    logger.info(f"Galileo Enabled: {args.enable_galileo}")
     logger.info("=" * 60)
     
     if not args.quiet:
         print(f"\n🔍 Processing Awesome List URL: {args.url}")
         print(f"📝 Logging at {args.log_level} level")
+        print(f"🔊 Verbosity: {args.verbosity}")
         if args.log_file:
             print(f"📄 Log file: {args.log_file}")
+        if args.enable_galileo:
+            print(f"📊 Galileo observability: ENABLED")
+        else:
+            print(f"📊 Galileo observability: DISABLED")
         print("-" * 50)
     
     try:
-        # Initialize agent
-        logger.info("Initializing AwesomeListAgent")
-        agent = AwesomeListAgent()
+        # Initialize agent using factory with Galileo support
+        logger.info("Initializing AwesomeListAgent with factory")
+        agent = await AwesomeListAgentFactory.create_agent(
+            verbosity=args.verbosity,
+            enable_galileo=args.enable_galileo
+        )
         
         # Process the URL
         logger.info(f"Starting to process URL: {args.url}")
@@ -132,7 +157,6 @@ def display_results(result: dict, processing_time: float):
         return
     
     parsed_data = result.get('parsed_data', {})
-    mcp_result = result.get('mcp_result', {})
     
     print("📊 PARSED INFORMATION:")
     print("-" * 30)
@@ -162,13 +186,6 @@ def display_results(result: dict, processing_time: float):
     if context_summary:
         print(f"\n📝 SUMMARY:")
         print(f"{context_summary}")
-    
-    # Show MCP result
-    print(f"\n🔗 MCP SERVER RESULT:")
-    print("-" * 30)
-    print(f"Status: {mcp_result.get('mcp_status', 'N/A')}")
-    print(f"Message: {mcp_result.get('message', 'N/A')}")
-    print(f"Timestamp: {mcp_result.get('timestamp', 'N/A')}")
 
 def save_results_to_file(result: dict, output_file: str, logger):
     """Save results to a JSON file."""

@@ -1,0 +1,25 @@
+2025-07-23 12:50:48 - awesome_list_agent - INFO - setup_logging:65 - Logging initialized - Level: INFO, File: logs/awesome_list_20250723_125048.log
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:80 - ============================================================
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:81 - Starting Awesome List Agent CLI
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:82 - Timestamp: 2025-07-23T12:50:48.339208
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:83 - Input URL: https://github.com/punkpeye/awesome-mcp-servers
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:84 - Log Level: INFO
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:85 - Verbosity: low
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:86 - Galileo Enabled: True
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:87 - ============================================================
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:103 - Initializing AwesomeListAgent with factory
+2025-07-23 12:50:48 - awesome_list_agent - INFO - main:110 - Starting to process URL: https://github.com/punkpeye/awesome-mcp-servers
+2025-07-23 12:50:48 - awesome_list_agent.AwesomeListParser - INFO - execute:92 - Starting to parse Awesome List URL: https://github.com/punkpeye/awesome-mcp-servers
+2025-07-23 12:50:48 - awesome_list_agent.AwesomeListParser - INFO - execute:104 - Fetching content from URL
+2025-07-23 12:50:49 - awesome_list_agent.AwesomeListParser - INFO - execute:115 - Successfully fetched content (807574 characters)
+2025-07-23 12:50:49 - awesome_list_agent.AwesomeListParser - INFO - execute:118 - Starting content parsing
+2025-07-23 12:50:49 - awesome_list_agent.AwesomeListParser - INFO - execute:123 - Parsing completed successfully
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:119 - Processing completed in 0.95 seconds
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:120 - Result status: success
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:123 - Successfully processed Awesome List
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:125 - Extracted topic: GitHub - punkpeye/awesome-mcp-servers: A collection of MCP servers.
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:126 - Found 1057 items
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:127 - Detected language: Typescript
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:128 - Categories: 10
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:141 - Application completed successfully
+2025-07-23 12:50:49 - awesome_list_agent - INFO - main:142 - ============================================================
