@@ -1,0 +1,204 @@
+# .cursor-rules - Authoritative Project Rules for Cursor AI Agents
+
+## Scope and Objectives
+This file serves as the authoritative project rules for Cursor AI agents working on this codebase. It ensures consistent, high-quality development aligned with the app’s purpose:
+
+**Transform an Awesome List into a structured, personalized Guided Learning Path.**
+
+---
+
+### Primary Purpose
+- **Guide Implementation** of the Awesome Learning MCP Server
+- **Enforce Consistency** across agents, tools, and endpoints
+- **Maintain Clear Separation** between parsing, enrichment, summarization, and output stages
+
+---
+
+### Application Scope
+This governs:
+- **FastAPI MCP Server** (core API and orchestration)
+- **Agent + Tools** (logic to process Awesome Lists and fetch content)
+- **LLM Integration** (summarization and context generation)
+- **Output Formatting** (guided learning plan)
+
+The **end goal** is:
+1. User submits an **Awesome List URL**
+2. System **extracts and ranks resources** (YouTube videos, blogs)
+3. System **fetches content** (transcripts, descriptions, metadata)
+4. System **summarizes and adds context** (customized to topic)
+5. System outputs a **structured Guided Learning Path** (Markdown or JSON)
+
+---
+
+## ✅ Functional Requirements (Tied to App Idea)
+
+- **Input**:
+  - A single Awesome List GitHub URL
+  - Validate URL and ensure it points to a markdown file
+- **Extraction**:
+  - Parse all resource links from the Awesome List
+  - Categorize by type (YouTube, Blog, Other)
+  - Rank resources by:
+    - List position
+    - Stars/upvotes (if available)
+    - Popularity signals
+- **Enrichment**:
+  - For YouTube:
+    - Fetch transcript (or description if transcript unavailable)
+    - Fetch metadata (title, channel, duration)
+  - For Blogs:
+    - Fetch content or scrape summary
+- **Summarization & Context**:
+  - Summarize each resource into **2–3 digestible points**
+  - Add **contextual notes**, including:
+    - Prerequisites
+    - Learning order (beginner → advanced)
+    - Time estimate
+- **Output**:
+  - Deliver **Markdown format by default**:
+    ```
+    # Guided Learning Path: [Topic]
+    ## Overview
+    (Short summary of topic)
+    
+    ### Step 1: [Resource Name]
+    - Type: YouTube / Blog
+    - Estimated Time: 15 min
+    - Summary: ...
+    - Why This Matters: ...
+    
+    ### Step 2: ...
+    ```
+  - Support JSON output for API use
+
+---
+
+## ✅ Architecture & Directory Structure (MANDATORY)
+(See previous section for full layout)
+
+---
+
+## ✅ Development Standards
+
+- **Coding Best Practices**:
+  - Code must reflect the functional pipeline:
+    - `parse → enrich → summarize → contextualize → output`
+  - Each stage **must** be modular and testable
+- **Data Models**:
+  - Use Pydantic models for request/response schemas in FastAPI
+  - Define `LearningResource` and `GuidedLearningPath` models
+- **Tools Must Be Stateless**:
+  - No global state in agent tools
+  - Input/Output must be explicit
+- **Orchestration Rule**:
+  - MCP routes NEVER call external APIs directly; always delegate to tools
+- **Context Injection**:
+  - Summarization must add **contextual hints**, not just raw compression
+  - Example: “Learn X before Y because...”
+
+---
+
+## ✅ Testing Strategy (Expanded)
+- Write tests for:
+  - **Parsing Logic** (Does it correctly extract YouTube/blog links?)
+  - **Ranking Algorithm**
+  - **Summarization Accuracy** (mock LLM responses)
+  - **Output Structure** (Markdown and JSON)
+- Include sample Awesome Lists in `/tests/data/`
+
+---
+
+## ✅ Compliance Expectation
+All AI agents **MUST**:
+- Preserve the user experience goal:
+  **“Turn any Awesome List into a personalized learning roadmap.”**
+- Ensure every commit supports modularity for:
+  - Future expansion (e.g., adding podcasts or papers)
+  - Optional user customization (difficulty, time commitment)
+
+---
+
+### Primary Purpose
+- **Authoritative Guidance**: Serve as the single source of truth for project-specific development rules and conventions
+- **AI Agent Compliance**: Ensure all Cursor AI agents follow standardized practices when generating, modifying, or reviewing code
+- **Consistency Enforcement**: Maintain uniform coding standards, architectural patterns, and development workflows
+
+---
+
+### Application Scope
+This rules file specifically governs development of the **Awesome Learning MCP Server**, a **FastAPI + Agentic MCP (Model Context Protocol)** application that builds a **guided learning path from an Awesome List URL**.
+
+The architecture includes:
+- **FastAPI MCP Server**: Core processing layer for summarization, ranking, and context generation.
+- **Agent Layer**: Handles user requests, orchestrates tools, and communicates with MCP Server.
+- **Tools**: Components to extract, fetch, and process content (GitHub Awesome Lists, YouTube transcripts, blogs).
+- **Output**: A customized guided learning path (Markdown or JSON).
+
+---
+
+## ✅ Framework & Architecture Guidelines
+
+- **FastAPI** is the authoritative framework for building the MCP server API.
+- The MCP Server **must** adhere to Model Context Protocol guidelines for agent interoperability.
+- **Agentic Orchestration**: The `agent/` folder manages high-level orchestration logic using tools under `agent/tools/`.
+- Use **dependency injection** and `async` I/O where possible for FastAPI routes.
+- **Directory Structure** (MANDATORY):
+
+
+---
+
+## ✅ Development Standards
+
+- **Language**: Python 3.10+
+- **Framework**: FastAPI for MCP server; Agent logic uses standard Python
+- **Dependency Management**: Use `requirements.txt`; pin versions where possible
+- **Async First**: Prefer `async` functions for network-bound operations
+- **Linting & Style**:
+  - Use `black` for formatting
+  - Use `isort` for import sorting
+  - Follow PEP8 naming conventions
+- **Documentation**:
+  - All public functions and classes must have docstrings
+  - Each route and tool requires a short docstring on purpose and expected input/output
+- **Error Handling**:
+  - MCP Server must return structured JSON errors with proper HTTP status codes
+  - Agent tools must handle timeouts and content-fetch failures gracefully
+- **Logging**:
+  - Use `logging` module; no `print()` in production code
+- **Security**:
+  - Never expose API keys; use `.env` or `config.py`
+
+---
+
+## ✅ Testing Strategy
+
+- Unit tests for:
+  - GitHub parser
+  - Content fetcher
+  - Summarizer
+  - Ranking and formatting
+- Integration tests for:
+  - MCP Server endpoints (`routes/`)
+  - Agent tool orchestration
+- Use `pytest` as the testing framework
+
+---
+
+## ✅ Optional Integrations
+
+- **Galileo Observability** (if enabled) for model behavior monitoring
+- Add feature flags for advanced observability; never hardcode them
+
+---
+
+## ✅ Compliance Expectation
+
+All AI agents and developers **MUST**:
+- Follow the directory layout exactly
+- Implement features as modular components (agent vs tools vs MCP server separation)
+- Avoid mixing orchestration logic with API endpoints
+- Include tests for new functionality
+
+This `.cursor-rules` file is the **single source of truth** for architecture and coding standards in this repo.
+
+
