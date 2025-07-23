@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
-import yt_dlp
 from yt_dlp import YoutubeDL
 from pydantic import BaseModel, Field
 
