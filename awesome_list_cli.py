@@ -149,7 +149,7 @@ async def run_agent(url: str):
         while True:
             confirm = (
                 input(
-                    "🤔 Are you ready to see the top 5 recommended YouTube videos? (yes/no): "
+                    "🤔 Are you ready to extract YouTube videos from the markdown content? (yes/no): "
                 )
                 .strip()
                 .lower()
@@ -163,46 +163,42 @@ async def run_agent(url: str):
             else:
                 print("❌ Please enter 'yes' or 'no'.")
 
-        # Display top 5 recommended YouTube videos
-        print("\n" + "=" * 60)
-        print("🎬 TOP 5 RECOMMENDED YOUTUBE VIDEOS")
-        print("=" * 60)
+        # Extract YouTube URLs from markdown using the specialized tool
+        print("\n🎬 Extracting YouTube videos from markdown content...")
+        print("⏳ Using MarkdownYouTubeExtractorTool with Firecrawl...\n")
 
-        if "parsed_data" in result and "youtube_metadata" in result["parsed_data"]:
-            youtube_videos = result["parsed_data"]["youtube_metadata"]
+        # Call the new extract_youtube_from_markdown function
+        youtube_extraction_result = await agent.extract_youtube_from_markdown(url)
 
-            if not youtube_videos:
-                print("\n❌ No YouTube videos found in this Awesome List.")
-                return
+        # Check if YouTube extraction was successful
+        if youtube_extraction_result.get("status") != "success":
+            print(f"\n❌ Error extracting YouTube videos: {youtube_extraction_result.get('error', 'Unknown error')}")
+            return
 
-            # Sort videos by view count and duration to get the most popular/valuable ones
-            sorted_videos = sorted(
-                youtube_videos,
-                key=lambda x: (x.get("view_count", 0), -(x.get("duration_seconds", 0))),
-                reverse=True,
-            )
+        # Display YouTube extraction results
+        youtube_urls = youtube_extraction_result.get("youtube_urls", [])
+        youtube_count = youtube_extraction_result.get("youtube_count", 0)
 
-            # Display top 5 videos
-            top_5_videos = sorted_videos[:5]
+        print(f"\n✅ Successfully extracted {youtube_count} YouTube URLs from markdown!")
 
-            for i, video in enumerate(top_5_videos, 1):
-                print(f"\n{i}. 🎥 {video.get('title', 'Unknown Title')}")
-                print(f"   👤 Channel: {video.get('channel_name', 'Unknown Channel')}")
-                print(f"   👀 Views: {video.get('view_count', 0):,}")
-                print(
-                    f"   ⏱️  Duration: {video.get('duration_seconds', 0) // 60}:{video.get('duration_seconds', 0) % 60:02d}"
-                )
-                print(f"   📅 Published: {video.get('published_date', 'Unknown')}")
-                print(f"   🔗 Watch Now: {video.get('url', 'No URL available')}")
+        if youtube_count == 0:
+            print("\n❌ No YouTube videos found in the markdown content.")
+            return
 
-                # Add description if available
-                if video.get("description"):
-                    desc = (
-                        video["description"][:100] + "..."
-                        if len(video["description"]) > 100
-                        else video["description"]
-                    )
-                    print(f"   📝 {desc}")
+        # Display the extracted YouTube URLs
+        print(f"\n🎥 Found {youtube_count} YouTube videos:")
+        for i, youtube_url in enumerate(youtube_urls[:10], 1):  # Show first 10
+            print(f"  {i}. {youtube_url}")
+
+        if youtube_count > 10:
+            print(f"  ... and {youtube_count - 10} more videos")
+
+        # Display processing metadata
+        if "processing_metadata" in youtube_extraction_result:
+            metadata = youtube_extraction_result["processing_metadata"]
+            print(f"\n⏱️  YouTube Extraction Time: {metadata.get('processing_time', 'Unknown')}")
+            print(f"� Tool Used: {metadata.get('tool_used', 'Unknown')}")
+            print(f"📄 Markdown Length: {metadata.get('markdown_length', 0)} characters")
 
         # Display additional analysis results
 
@@ -211,6 +207,29 @@ async def run_agent(url: str):
         print("\n" + "=" * 60)
         print("🎯 COMPREHENSIVE ANALYSIS COMPLETE")
         print("=" * 60)
+
+        # Display YouTube extraction results from second tool call
+        if youtube_extraction_result and "youtube_urls" in youtube_extraction_result:
+            youtube_count = youtube_extraction_result.get("youtube_count", 0)
+            youtube_urls = youtube_extraction_result.get("youtube_urls", [])
+
+            print(f"\n🎥 YouTube Video Analysis:")
+            print(f"   • Total YouTube videos found: {youtube_count}")
+
+            if youtube_urls:
+                print(f"   • Video URLs extracted:")
+                for i, url in enumerate(youtube_urls[:10], 1):  # Show first 10 URLs
+                    print(f"     {i}. {url}")
+
+                if len(youtube_urls) > 10:
+                    print(f"     ... and {len(youtube_urls) - 10} more videos")
+
+            # Display YouTube processing metadata if available
+            if "processing_metadata" in youtube_extraction_result:
+                yt_metadata = youtube_extraction_result["processing_metadata"]
+                print(f"   • YouTube extraction time: {yt_metadata.get('processing_time', 'Unknown')}")
+                if yt_metadata.get('trace_id'):
+                    print(f"   • YouTube trace ID: {yt_metadata['trace_id']}")
 
         # Display learning path
         if "learning_path" in result:
@@ -277,8 +296,9 @@ async def run_agent(url: str):
             print(
                 f"   • Categories found: {metadata.get('categories_count', 'Unknown')}"
             )
+            youtube_count_display = youtube_extraction_result.get("youtube_count", metadata.get('youtube_videos_count', 'Unknown')) if youtube_extraction_result else metadata.get('youtube_videos_count', 'Unknown')
             print(
-                f"   • YouTube videos analyzed: {metadata.get('youtube_videos_count', 'Unknown')}"
+                f"   • YouTube videos analyzed: {youtube_count_display}"
             )
             print(f"   • Processing time: {metadata.get('processing_time', 'Unknown')}")
             print(f"   • Galileo trace ID: {metadata.get('trace_id', 'Not available')}")

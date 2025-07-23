@@ -91,7 +91,7 @@ You are designed to be the ultimate tool for processing and understanding Awesom
     @classmethod
     def get_agent_description(cls) -> str:
         """Return a user-friendly description of what this agent does."""
-        return """The AwesomeListAgent is a specialized AI agent designed to process and analyze "Awesome Lists" - 
+        return """The AwesomeListAgent is a specialized AI agent designed to process and analyze "Awesome Lists" -
 curated collections of resources, tools, libraries, and learning materials typically found on GitHub and other platforms.
 
 Key Capabilities:
@@ -624,3 +624,160 @@ This agent is perfect for:
 
         except Exception as e:
             self.logger.warning(f"Error during cleanup: {str(e)}")
+
+    async def extract_youtube_from_markdown(self, url: str) -> Dict[str, Any]:
+        """Extract YouTube URLs from markdown content using the MarkdownYouTubeExtractorTool.
+
+        This function specifically uses the MarkdownYouTubeExtractorTool to:
+        1. Scrape markdown content from the given URL using Firecrawl
+        2. Extract all YouTube URLs found in the markdown
+        3. Return structured data about the YouTube videos found
+
+        Args:
+            url: The URL containing markdown content to analyze for YouTube links
+
+        Returns:
+            Dict containing:
+            - status: "success" or "error"
+            - url: The original URL processed
+            - youtube_urls: List of YouTube URLs found
+            - youtube_count: Number of YouTube URLs found
+            - markdown_content: The scraped markdown content (if successful)
+            - error: Error message (if failed)
+            - processing_metadata: Information about the extraction process
+        """
+        import time
+
+        start_time = time.time()
+
+        # Log the start of YouTube extraction from markdown
+        self.logger.info(f"🎬 Starting YouTube extraction from markdown content at: {url}")
+        self.logger.info(f"🔧 Using MarkdownYouTubeExtractorTool for specialized extraction")
+
+        # Start Galileo trace if logger supports it
+        if hasattr(self.logger, "start_trace"):
+            self.logger.start_trace(f"extract_youtube_from_markdown_{url.split('/')[-1]}")
+
+        try:
+            # Add tool span for markdown YouTube extractor execution
+            if hasattr(self.logger, "add_tool_span"):
+                tool_start_time = time.time()
+
+            # Execute the MarkdownYouTubeExtractorTool
+            self.logger.info("🔍 Executing MarkdownYouTubeExtractorTool...")
+            extraction_result = await self.markdown_youtube_extractor_tool.execute(url=url)
+
+            # Log tool execution span
+            if hasattr(self.logger, "add_tool_span"):
+                tool_duration = (time.time() - tool_start_time) * 1_000_000_000
+                self.logger.add_tool_span(
+                    tool_name="markdown_youtube_extractor_tool",
+                    inputs={"url": url},
+                    outputs=extraction_result,
+                    duration_ns=int(tool_duration),
+                    success=(
+                        "error" not in extraction_result
+                        if isinstance(extraction_result, dict)
+                        else True
+                    ),
+                )
+
+            # Check if extraction was successful
+            if isinstance(extraction_result, dict) and "error" in extraction_result:
+                error_msg = f"MarkdownYouTubeExtractorTool failed: {extraction_result['error']}"
+                self.logger.error(error_msg)
+
+                # Conclude trace with error
+                if hasattr(self.logger, "conclude_trace"):
+                    total_duration = (time.time() - start_time) * 1_000_000_000
+                    self.logger.conclude_trace(
+                        output=f"Error: {error_msg}",
+                        duration_ns=int(total_duration),
+                    )
+
+                return {
+                    "status": "error",
+                    "url": url,
+                    "error": error_msg,
+                    "youtube_urls": [],
+                    "youtube_count": 0,
+                    "processing_metadata": {
+                        "processing_time": f"{(time.time() - start_time):.2f} seconds",
+                        "tool_used": "MarkdownYouTubeExtractorTool",
+                        "success": False
+                    }
+                }
+
+            # Extract YouTube URLs from the result
+            youtube_urls = []
+            markdown_content = ""
+
+            if isinstance(extraction_result, dict):
+                youtube_urls = extraction_result.get("youtube_urls", [])
+                markdown_content = extraction_result.get("markdown_content", "")
+
+                # Log successful extraction
+                self.logger.info(f"✅ Successfully extracted {len(youtube_urls)} YouTube URLs")
+                self.logger.info(f"📄 Processed {len(markdown_content)} characters of markdown content")
+
+                # Log sample YouTube URLs found
+                if youtube_urls:
+                    sample_urls = youtube_urls[:3]  # Show first 3 URLs
+                    self.logger.info(f"🎥 Sample YouTube URLs found: {sample_urls}")
+
+            # Create comprehensive result
+            result = {
+                "status": "success",
+                "url": url,
+                "youtube_urls": youtube_urls,
+                "youtube_count": len(youtube_urls),
+                "markdown_content": markdown_content,
+                "extraction_details": extraction_result,
+                "processing_metadata": {
+                    "processing_time": f"{(time.time() - start_time):.2f} seconds",
+                    "tool_used": "MarkdownYouTubeExtractorTool",
+                    "success": True,
+                    "markdown_length": len(markdown_content),
+                    "trace_id": (
+                        f"trace_{int(start_time)}"
+                        if hasattr(self.logger, "start_trace")
+                        else "Not available"
+                    ),
+                }
+            }
+
+            # Conclude trace with success
+            if hasattr(self.logger, "conclude_trace"):
+                total_duration = (time.time() - start_time) * 1_000_000_000
+                self.logger.conclude_trace(
+                    output=f"Successfully extracted {len(youtube_urls)} YouTube URLs from {url}",
+                    duration_ns=int(total_duration),
+                )
+
+            self.logger.info(f"🎯 Completed YouTube extraction from markdown: {url}")
+            return result
+
+        except Exception as e:
+            error_msg = f"Unexpected error during YouTube extraction from markdown: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+
+            # Conclude trace with error
+            if hasattr(self.logger, "conclude_trace"):
+                total_duration = (time.time() - start_time) * 1_000_000_000
+                self.logger.conclude_trace(
+                    output=f"Error: {error_msg}",
+                    duration_ns=int(total_duration),
+                )
+
+            return {
+                "status": "error",
+                "url": url,
+                "error": error_msg,
+                "youtube_urls": [],
+                "youtube_count": 0,
+                "processing_metadata": {
+                    "processing_time": f"{(time.time() - start_time):.2f} seconds",
+                    "tool_used": "MarkdownYouTubeExtractorTool",
+                    "success": False
+                }
+            }
