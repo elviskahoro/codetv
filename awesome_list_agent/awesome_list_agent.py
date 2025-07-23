@@ -13,11 +13,25 @@ class AwesomeListAgent(Agent):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger = logging.getLogger("awesome_list_agent.AwesomeListAgent")
         
-        # Register all tools
+        # Set up logger - use the injected logger or create a default one
+        if self.logger:
+            self.logger = self.logger
+        else:
+            self.logger = logging.getLogger("awesome_list_agent.AwesomeListAgent")
+        
+        # Log agent initialization
         self.logger.info("Initializing AwesomeListAgent")
         
+        # Register all tools
+        self._register_tools()
+        
+        # Set up Galileo hooks if logger supports it
+        if hasattr(self.logger, '_setup_logger'):
+            self.logger._setup_logger(self.logger)
+    
+    def _register_tools(self):
+        """Register all available tools with the agent."""
         # Register the awesome list parser tool
         self.parser = AwesomeListParser()
         self.tool_registry.register(
