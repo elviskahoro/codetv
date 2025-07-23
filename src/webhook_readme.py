@@ -3,29 +3,38 @@ from __future__ import annotations
 
 import modal
 from modal import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from enum import Enum
 
 from get_youtube import YouTubeDownloader, YouTubeData
-from download_transcript import download_youtube_audio_to_memory
 from get_readme import firecrawl_markdown
 
-DEFAULT_YOUTUBE_VIDEO: str = (
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
-)
 DEFAULT_MARKDOWN_URL: str = (
     "https://github.com/josephmisiti/awesome-machine-learning"
 )
 
-
-class TranscriptOrMetadata(Enum):
-    transcript = "transcript"
-    metadata = "metadata"
+from firecrawl.firecrawl import FirecrawlApp
+from src.extract_youtube_urls import extract_youtube_urls_from_markdown
 
 
-class Webhook(BaseModel):
+def firecrawl_markdown(
+    url: str,
+) -> str:
+    api_key: str = "fc-95ddf7f5c64f4e1e814f03567183dc16"
+    app: Any = FirecrawlApp(api_key=api_key)
+    scrape_data = app.scrape_url(
+        url,
+        formats=["markdown"],
+    )
+    markdown: str = scrape_data.markdown
+    return markdown
+
+
+class WebhookInput(BaseModel):
     link: str
-    transcript_or_metadata: TranscriptOrMetadata = TranscriptOrMetadata.metadata
+
+class WebhookOutput(RootModel):
+    root: list[str]
 
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -39,17 +48,9 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name="postman-mcp",
+    name="postman-mcp-get_readme",
     image=image,
 )
-
-
-def get_youtube_info(
-    url: str,
-) -> YouTubeData:
-    downloader = YouTubeDownloader()
-    youtube_data = downloader.get_all_info(url)
-    return youtube_data
 
 
 @app.function(
@@ -62,7 +63,7 @@ def get_youtube_info(
     docs=True,
 )
 def web(
-    webhook: Webhook,
+    webhook: WebhookInput,
 ) -> YouTubeData:
     link: str = webhook.link
     transcript_or_metadata: TranscriptOrMetadata = webhook.transcript_or_metadata
@@ -79,13 +80,6 @@ def local() -> None:
     markdown: str = firecrawl_markdown(
         url=DEFAULT_MARKDOWN_URL,
     )
-    print(markdown  )
-    # youtube_data: YouTubeData = get_youtube_info(
-    #     url=DEFAULT_YOUTUBE_VIDEO,
-    # )
-
-    # audio_data: Dict[str, Any] = download_youtube_audio_to_memory(
-    #     url=DEFAULT_YOUTUBE_VIDEO,
-    # )
-    # print(f"Successfully extracted data for: {youtube_data.title}")
-
+    urls: list[str] = extract_youtube_urls_from_markdown(markdown)
+    print(urls)
+    return WebhookOutput(root=urls)

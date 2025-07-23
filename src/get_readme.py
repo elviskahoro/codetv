@@ -1,4 +1,6 @@
 from firecrawl.firecrawl import FirecrawlApp
+from src.extract_youtube_urls import extract_youtube_urls_from_markdown
+
 
 
 def firecrawl_markdown(
@@ -11,10 +13,11 @@ def firecrawl_markdown(
         formats=["markdown"],
     )
     markdown: str = scrape_data.markdown
-    print(markdown)
     return markdown
 
 if __name__ == "__main__":
-    firecrawl_markdown(
+    markdown: str = firecrawl_markdown(
         url="https://github.com/josephmisiti/awesome-machine-learning",
     )
+    urls: List[str] = extract_youtube_urls_from_markdown(markdown)
+    print(urls)
