@@ -7,20 +7,17 @@ from pydantic import BaseModel
 from enum import Enum
 
 from get_youtube import YouTubeDownloader, YouTubeData
-from download_transcript import download_youtube_audio_to_memory
-from get_readme import firecrawl_markdown
-
-DEFAULT_YOUTUBE_VIDEO: str = (
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
-)
-DEFAULT_MARKDOWN_URL: str = (
-    "https://github.com/josephmisiti/awesome-machine-learning"
-)
-
 
 class TranscriptOrMetadata(Enum):
     transcript = "transcript"
     metadata = "metadata"
+
+DEFAULT_YOUTUBE_VIDEO: str = (
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"  # Rick Roll for testing
+)
+DEFAULT_TRANSCRIPT_OR_METADATA: TranscriptOrMetadata = TranscriptOrMetadata.metadata
+
+
 
 
 class Webhook(BaseModel):
@@ -39,16 +36,20 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name="postman-mcp",
+    name="postman-mcp-youtube",
     image=image,
 )
 
 
 def get_youtube_info(
     url: str,
+    transcript_or_metadata: TranscriptOrMetadata,
 ) -> YouTubeData:
     downloader = YouTubeDownloader()
-    youtube_data = downloader.get_all_info(url)
+    if transcript_or_metadata == TranscriptOrMetadata.metadata:
+        youtube_data = downloader.get_metadata_only(url)
+    else:
+        youtube_data = downloader.get_all_info(url)
     return youtube_data
 
 
@@ -76,13 +77,11 @@ def web(
 @app.local_entrypoint()
 def local() -> None:
     print("Starting pipeline")
-    markdown: str = firecrawl_markdown(
-        url=DEFAULT_MARKDOWN_URL,
+    youtube_data: YouTubeData = get_youtube_info(
+        url=DEFAULT_YOUTUBE_VIDEO,
+        transcript_or_metadata=DEFAULT_TRANSCRIPT_OR_METADATA,
     )
-    print(markdown  )
-    # youtube_data: YouTubeData = get_youtube_info(
-    #     url=DEFAULT_YOUTUBE_VIDEO,
-    # )
+    print(youtube_data)
 
     # audio_data: Dict[str, Any] = download_youtube_audio_to_memory(
     #     url=DEFAULT_YOUTUBE_VIDEO,

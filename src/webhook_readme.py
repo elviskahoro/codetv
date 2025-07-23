@@ -48,7 +48,7 @@ image.add_local_python_source(
     ],
 )
 app = modal.App(
-    name="postman-mcp-get_readme",
+    name="postman-mcp-readme",
     image=image,
 )
 
