@@ -9,3 +9,4 @@ python-dotenv
 pydantic>=2.4.0
 reflex
 s3fs
+yt-dlp

@@ -6,6 +6,7 @@ from modal import Image
 from pydantic import BaseModel
 from enum import Enum
 
+
 class TranscriptOrMetadata(Enum):
     transcript = "transcript"
     metadata = "metadata"
@@ -54,4 +55,3 @@ def local(
     search_query: str,
 ) -> None:
     print("test")
-
