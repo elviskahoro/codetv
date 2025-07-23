@@ -8,6 +8,7 @@ import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, parse_qs
 from enum import Enum
+from pydantic import BaseModel, Field
 
 from .base import BaseTool
 from ..models import ToolMetadata, ToolError
