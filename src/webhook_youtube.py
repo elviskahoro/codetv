@@ -16,7 +16,7 @@ class YoutubeDataType(Enum):
 DEFAULT_YOUTUBE_VIDEO: str = (
     "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 )
-DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.metadata
+DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.transcript
 
 
 class Webhook(BaseModel):
@@ -67,7 +67,7 @@ def get_youtube_info(
 )
 def web(
     webhook: Webhook,
-) -> YouTubeData:
+) -> YouTubeData | dict[str, Any]:
     link: str = webhook.link
     transcript_or_metadata: YoutubeDataType = webhook.transcript_or_metadata
     print(link)
