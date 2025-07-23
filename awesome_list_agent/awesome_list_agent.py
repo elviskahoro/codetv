@@ -1,5 +1,8 @@
 from .agent import Agent
 from .tools.awesome_list_parser import AwesomeListParser
+from .tools.youtube_metadata_tool import YouTubeMetadataTool
+from .tools.web_scraping_tool import WebScrapingTool
+from .tools.content_analysis_tool import ContentAnalysisTool
 from typing import Any, Dict, List, Optional
 import uuid
 import logging
@@ -12,15 +15,40 @@ class AwesomeListAgent(Agent):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger("awesome_list_agent.AwesomeListAgent")
         
-        # Register the awesome list parser tool
+        # Register all tools
         self.logger.info("Initializing AwesomeListAgent")
+        
+        # Register the awesome list parser tool
         self.parser = AwesomeListParser()
-        self.tool_registry.register_tool(
-            name="awesome_list_parser",
-            implementation=AwesomeListParser,
-            metadata=AwesomeListParser.get_metadata()
+        self.tool_registry.register(
+            metadata=AwesomeListParser.get_metadata(),
+            implementation=AwesomeListParser
         )
         self.logger.debug("Registered awesome_list_parser tool")
+        
+        # Register YouTube metadata tool
+        self.youtube_tool = YouTubeMetadataTool()
+        self.tool_registry.register(
+            metadata=YouTubeMetadataTool.get_metadata(),
+            implementation=YouTubeMetadataTool
+        )
+        self.logger.debug("Registered youtube_metadata_tool")
+        
+        # Register web scraping tool
+        self.web_scraping_tool = WebScrapingTool()
+        self.tool_registry.register(
+            metadata=WebScrapingTool.get_metadata(),
+            implementation=WebScrapingTool
+        )
+        self.logger.debug("Registered web_scraping_tool")
+        
+        # Register content analysis tool
+        self.content_analysis_tool = ContentAnalysisTool()
+        self.tool_registry.register(
+            metadata=ContentAnalysisTool.get_metadata(),
+            implementation=ContentAnalysisTool
+        )
+        self.logger.debug("Registered content_analysis_tool")
 
     async def process_awesome_list(self, url: str) -> Dict[str, Any]:
         """Process an Awesome List URL to extract key information and call MCP server.

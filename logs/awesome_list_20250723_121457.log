@@ -1,0 +1,17 @@
+2025-07-23 12:14:57 - awesome_list_agent - INFO - setup_logging:65 - Logging initialized - Level: INFO, File: logs/awesome_list_20250723_121457.log
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:65 - ============================================================
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:66 - Starting Awesome List Agent CLI
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:67 - Timestamp: 2025-07-23T12:14:57.811412
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:68 - Input URL: https://github.com/sindresorhus/awesome
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:69 - Log Level: INFO
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:70 - ============================================================
+2025-07-23 12:14:57 - awesome_list_agent - INFO - main:81 - Initializing AwesomeListAgent
+2025-07-23 12:14:57 - awesome_list_agent.AwesomeListAgent - INFO - __init__:16 - Initializing AwesomeListAgent
+2025-07-23 12:14:57 - awesome_list_agent - ERROR - main:120 - Unexpected error occurred: 'ToolRegistry' object has no attribute 'register_tool'
+Traceback (most recent call last):
+  File "/Users/erinmikail/GitHub-Local/codetv/awesome_list_interface.py", line 82, in main
+    agent = AwesomeListAgent()
+  File "/Users/erinmikail/GitHub-Local/codetv/awesome_list_agent/awesome_list_agent.py", line 18, in __init__
+    self.tool_registry.register_tool(
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ToolRegistry' object has no attribute 'register_tool'

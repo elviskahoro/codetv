@@ -47,9 +47,10 @@ class SimpleExampleAgent:
         
         try:
             # Create a simple prompt
+            from agent_framework.llm.models import LLMMessage
             messages = [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": task}
+                LLMMessage(role="system", content="You are a helpful assistant."),
+                LLMMessage(role="user", content=task)
             ]
             
             # Generate response with Galileo logging
