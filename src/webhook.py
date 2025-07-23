@@ -46,24 +46,6 @@ def get_youtube_info(
 ) -> YouTubeData:
     downloader = YouTubeDownloader()
     youtube_data = downloader.get_all_info(url)
-
-    if youtube_data.error is None:
-        # Convert to JSON string for webhook response
-        json_output = downloader.to_json_string(youtube_data)
-        print(f"JSON output length: {len(json_output)} characters")
-        print(json_output)
-
-        # Print some key information
-        print(f"Title: {youtube_data.title}")
-        print(f"Uploader: {youtube_data.uploader}")
-        print(f"Duration: {youtube_data.duration} seconds")
-        print(f"View count: {youtube_data.view_count}")
-        print(f"Available subtitles: {list(youtube_data.subtitles.keys()) if youtube_data.subtitles else []}")
-        print(f"Available auto captions: {list(youtube_data.automatic_captions.keys()) if youtube_data.automatic_captions else []}")
-        print(f"Subtitle content keys: {list(youtube_data.subtitle_content.keys()) if youtube_data.subtitle_content else []}")
-    else:
-        print(f"Error: {youtube_data.error}")
-
     return youtube_data
 
 

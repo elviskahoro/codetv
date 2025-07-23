@@ -1,4 +1,3 @@
-from msvcrt import kbhit
 from firecrawl.firecrawl import FirecrawlApp
 
 API_KEY: str = "fc-96612b847eab48adaaa9ca9d15fe9d1c"
@@ -19,3 +18,9 @@ def firecrawl_markdown(
     markdown: str = scrape_data["markdown"]
     print(markdown)
     return markdown
+
+if __name__ == "__main__":
+    firecrawl_markdown(
+        api_key=API_KEY,
+        url="https://github.com/josephmisiti/awesome-machine-learning",
+    )
