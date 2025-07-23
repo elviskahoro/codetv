@@ -89,3 +89,44 @@ wheels/
 *.db
 *.py[cod]
 *.zip
+
+# Test files and test-related artifacts
+test_*.py
+*_test.py
+test_improved_agent.py
+test_galileo_integration.py
+test_cli_simple.py
+test.txt
+tests/
+test_example.py
+
+# Documentation and educational artifacts
+*.md
+!README.md
+!LICENSE
+!ARCHITECTURE.md
+!Development-Guidelines.md
+!GALILEO_INTEGRATION.md
+!TOOLS_DOCUMENTATION.md
+!AWESOME_LIST_CLI.md
+AGENT_IMPROVEMENTS_SUMMARY.md
+TOOL_FLOW_SUMMARY.md
+
+# Example and demonstration files
+awesome_list_examples*.py
+awesome_list_interface.py
+awesome_list_logging.py
+galileo_example.py
+setup_cli.py
+
+# Output and result directories
+outputs/
+results/
+logs/
+
+# Runtime configuration
+runtime_and_environment_configuration.md
+rxconfig.py
+
+# Source files that are not part of the main agent
+src/

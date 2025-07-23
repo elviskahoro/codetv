@@ -7,6 +7,7 @@ from awesome_list_agent.tools.youtube_metadata_tool import YouTubeMetadataTool
 from awesome_list_agent.tools.web_scraping_tool import WebScrapingTool
 from awesome_list_agent.tools.content_analysis_tool import ContentAnalysisTool
 from awesome_list_agent.tools.awesome_list_parser import AwesomeListParser
+from awesome_list_agent.tools.markdown_youtube_extractor_tool import MarkdownYouTubeExtractorTool
 
 
 class TestYouTubeMetadataTool:
@@ -428,6 +429,156 @@ class TestAwesomeListParser:
         language = tool._detect_language(js_content, js_url)
         
         assert "JavaScript" in language or "Typescript" in language
+
+
+class TestMarkdownYouTubeExtractorTool:
+    """Test the Markdown YouTube Extractor Tool."""
+    
+    @pytest.fixture
+    def tool(self):
+        return MarkdownYouTubeExtractorTool()
+    
+    @pytest.mark.asyncio
+    async def test_extract_youtube_urls_from_markdown(self, tool):
+        """Test YouTube URL extraction from markdown content."""
+        markdown_content = """
+        # My Awesome List
+        
+        Check out this great video: [Amazing Tutorial](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+        
+        Also watch: https://youtu.be/jNQXAC9IVRw
+        
+        Here's a playlist: https://www.youtube.com/playlist?list=PLrAXtmRdnEQy6nuLMHjMZOz59Oq8B7Oe8
+        
+        ![Video Thumbnail](https://www.youtube.com/watch?v=ScMzIvxBSi4)
+        """
+        
+        urls = tool._extract_youtube_urls_from_markdown(markdown_content, max_urls=10)
+        
+        assert len(urls) >= 3  # Should find at least 3 YouTube URLs
+        assert "https://www.youtube.com/watch?v=dQw4w9WgXcQ" in urls
+        assert "https://youtu.be/jNQXAC9IVRw" in urls
+        assert "https://www.youtube.com/playlist?list=PLrAXtmRdnEQy6nuLMHjMZOz59Oq8B7Oe8" in urls
+    
+    @pytest.mark.asyncio
+    async def test_extract_video_ids_from_urls(self, tool):
+        """Test video ID extraction from YouTube URLs."""
+        urls = [
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://youtu.be/jNQXAC9IVRw",
+            "https://www.youtube.com/embed/ScMzIvxBSi4",
+            "https://www.youtube.com/v/anotherVideoId"
+        ]
+        
+        video_ids = tool._extract_video_ids_from_urls(urls)
+        
+        assert "dQw4w9WgXcQ" in video_ids
+        assert "jNQXAC9IVRw" in video_ids
+        assert "ScMzIvxBSi4" in video_ids
+        assert "anotherVideoId" in video_ids
+        assert len(video_ids) == 4
+    
+    @pytest.mark.asyncio
+    async def test_extract_markdown_from_html(self, tool):
+        """Test HTML to markdown conversion."""
+        html_content = """
+        <html>
+        <head><title>Test Page</title></head>
+        <body>
+            <h1>Main Title</h1>
+            <h2>Subtitle</h2>
+            <p>This is a paragraph with a <a href="https://www.youtube.com/watch?v=test123">YouTube link</a>.</p>
+            <ul>
+                <li>Item 1</li>
+                <li>Item 2</li>
+            </ul>
+        </body>
+        </html>
+        """
+        
+        markdown = tool._extract_markdown_from_html(html_content)
+        
+        assert "# Main Title" in markdown
+        assert "## Subtitle" in markdown
+        assert "YouTube link" in markdown
+        assert "- Item 1" in markdown
+        assert "- Item 2" in markdown
+    
+    @pytest.mark.asyncio
+    async def test_generate_url_metadata(self, tool):
+        """Test URL metadata generation."""
+        urls = [
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/playlist?list=PLrAXtmRdnEQy6nuLMHjMZOz59Oq8B7Oe8"
+        ]
+        markdown_content = """
+        Check out this [great video](https://www.youtube.com/watch?v=dQw4w9WgXcQ) and this playlist.
+        """
+        
+        metadata = tool._generate_url_metadata(urls, markdown_content)
+        
+        assert len(metadata) == 2
+        assert metadata[0]["url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        assert metadata[0]["video_id"] == "dQw4w9WgXcQ"
+        assert metadata[0]["url_type"] == "video"
+        assert metadata[1]["url_type"] == "playlist"
+    
+    @pytest.mark.asyncio
+    async def test_calculate_statistics(self, tool):
+        """Test statistics calculation."""
+        urls = [
+            "https://www.youtube.com/watch?v=video1",
+            "https://www.youtube.com/watch?v=video2",
+            "https://www.youtube.com/playlist?list=playlist1"
+        ]
+        video_ids = ["video1", "video2"]
+        markdown_content = "# Title\n\nSome content with [links](https://example.com)."
+        
+        stats = tool._calculate_statistics(urls, video_ids, markdown_content)
+        
+        assert stats["total_urls_found"] == 3
+        assert stats["unique_video_ids"] == 2
+        assert stats["url_types"]["video"] == 2
+        assert stats["url_types"]["playlist"] == 1
+        assert stats["content_analysis"]["has_headings"] == True
+        assert stats["content_analysis"]["has_markdown_links"] == True
+    
+    @pytest.mark.asyncio
+    async def test_execute_with_mock_scraping(self, tool):
+        """Test tool execution with mocked web scraping."""
+        with patch.object(tool, '_scrape_markdown_content', new_callable=AsyncMock) as mock_scrape:
+            mock_scrape.return_value = """
+            # Test Content
+            
+            Watch this video: https://www.youtube.com/watch?v=test123
+            
+            And this one: [Another Video](https://youtu.be/another456)
+            """
+            
+            result = await tool.execute(
+                url="https://example.com",
+                extract_video_ids=True,
+                include_metadata=True
+            )
+            
+            assert isinstance(result, dict)
+            assert "error" not in result
+            assert result["source_url"] == "https://example.com"
+            assert len(result["youtube_urls"]) >= 2
+            assert len(result["video_ids"]) >= 2
+            assert len(result["url_metadata"]) >= 2
+            assert "statistics" in result
+            assert "extraction_summary" in result
+            assert "extraction_time_ms" in result
+    
+    @pytest.mark.asyncio
+    async def test_execute_with_invalid_url(self, tool):
+        """Test tool execution with an invalid URL."""
+        result = await tool.execute("not-a-url")
+        
+        assert isinstance(result, dict)
+        assert "error" in result
+        assert "Invalid URL format" in result["error"]
 
 
 if __name__ == "__main__":

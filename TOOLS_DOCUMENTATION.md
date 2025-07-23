@@ -7,9 +7,10 @@ This document provides comprehensive documentation for all tools available in th
 1. [Overview](#overview)
 2. [Tool Architecture](#tool-architecture)
 3. [Awesome List Parser Tool](#awesome-list-parser-tool)
-4. [YouTube Metadata Tool](#youtube-metadata-tool)
-5. [Web Scraping Tool](#web-scraping-tool)
-6. [Content Analysis Tool](#content-analysis-tool)
+4. [Markdown YouTube Extractor Tool](#markdown-youtube-extractor-tool)
+5. [YouTube Metadata Tool](#youtube-metadata-tool)
+6. [Web Scraping Tool](#web-scraping-tool)
+7. [Content Analysis Tool](#content-analysis-tool)
 7. [Galileo Observability](#galileo-observability)
 8. [Usage Examples](#usage-examples)
 9. [Testing](#testing)
@@ -17,8 +18,9 @@ This document provides comprehensive documentation for all tools available in th
 
 ## Overview
 
-The Awesome List Agent now includes four powerful tools that work together to provide comprehensive content analysis and metadata extraction capabilities:
+The Awesome List Agent now includes five powerful tools that work together to provide comprehensive content analysis and metadata extraction capabilities:
 
+- **Markdown YouTube Extractor**: Scrapes markdown content and extracts YouTube URLs (should be called early)
 - **Awesome List Parser**: Extracts metadata from awesome list repositories
 - **YouTube Metadata Tool**: Extracts comprehensive metadata from YouTube videos
 - **Web Scraping Tool**: Scrapes and parses web content with structured extraction
@@ -110,6 +112,88 @@ if "error" not in result:
     print(f"Items: {result['total_items']}")
     print(f"Categories: {len(result['categories'])}")
 ```
+
+## Markdown YouTube Extractor Tool
+
+### Purpose
+Scrapes markdown content from URLs and extracts YouTube URLs found within the content. This tool is essential for analyzing awesome lists and other markdown-based content to find video resources. It should be one of the first tools called by the agent when processing awesome lists.
+
+### Features
+- **Markdown Content Scraping**: Extracts markdown-like content from HTML pages
+- **YouTube URL Detection**: Comprehensive pattern matching for all YouTube URL formats
+- **Video ID Extraction**: Extracts unique video IDs from YouTube URLs
+- **URL Metadata Generation**: Provides context and metadata for each found URL
+- **Content Statistics**: Analyzes the structure and content of the markdown
+- **Multiple URL Types**: Supports videos, playlists, channels, and embeds
+- **Context Preservation**: Maintains link text and surrounding context
+
+### Input Schema
+```json
+{
+  "url": "string (required) - The URL to scrape markdown content from",
+  "extract_video_ids": "boolean (optional) - Extract video IDs from URLs",
+  "include_metadata": "boolean (optional) - Include detailed URL metadata",
+  "max_urls": "integer (optional) - Maximum number of URLs to extract",
+  "timeout": "integer (optional) - Request timeout in seconds"
+}
+```
+
+### Output Schema
+```json
+{
+  "source_url": "string - The original URL that was scraped",
+  "markdown_content": "string - The scraped markdown content",
+  "content_length": "integer - Length of the markdown content",
+  "youtube_urls": ["string"] - List of unique YouTube URLs found",
+  "video_ids": ["string"] - List of YouTube video IDs extracted",
+  "url_metadata": ["object"] - Detailed metadata for each URL",
+  "statistics": {
+    "total_urls_found": "integer - Total YouTube URLs found",
+    "unique_video_ids": "integer - Number of unique video IDs",
+    "url_types": "object - Count of different URL types",
+    "content_analysis": "object - Content structure analysis"
+  },
+  "extraction_summary": "string - Brief summary of the extraction"
+}
+```
+
+### Supported YouTube URL Formats
+- `https://www.youtube.com/watch?v=VIDEO_ID`
+- `https://youtu.be/VIDEO_ID`
+- `https://www.youtube.com/embed/VIDEO_ID`
+- `https://www.youtube.com/v/VIDEO_ID`
+- `https://www.youtube.com/playlist?list=PLAYLIST_ID`
+- `https://www.youtube.com/channel/CHANNEL_ID`
+- `https://www.youtube.com/c/CHANNEL_NAME`
+- `https://www.youtube.com/@USERNAME`
+
+### Example Usage
+```python
+# Extract YouTube URLs from markdown content
+result = await agent.markdown_youtube_extractor_tool.execute(
+    url="https://github.com/josephmisiti/awesome-machine-learning",
+    extract_video_ids=True,
+    include_metadata=True,
+    max_urls=50
+)
+
+if "error" not in result:
+    print(f"Found {len(result['youtube_urls'])} YouTube URLs")
+    print(f"Unique video IDs: {len(result['video_ids'])}")
+    print(f"URL types: {result['statistics']['url_types']}")
+    
+    for url_meta in result['url_metadata']:
+        print(f"- {url_meta['url_type']}: {url_meta['url']}")
+        if url_meta['link_text']:
+            print(f"  Link text: {url_meta['link_text']}")
+```
+
+### Why This Tool Should Be Called Early
+This tool is designed to be one of the first tools called by the agent because:
+1. **Content Discovery**: It identifies all video resources in the awesome list
+2. **Resource Planning**: Helps the agent understand what video content is available
+3. **Workflow Optimization**: Enables the agent to plan subsequent tool calls efficiently
+4. **Comprehensive Analysis**: Provides a foundation for deeper content analysis
 
 ## YouTube Metadata Tool
 
