@@ -54,7 +54,6 @@ def firecrawl_markdown(
 
 
 @app.function(
-    region="us-east4",
     allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )

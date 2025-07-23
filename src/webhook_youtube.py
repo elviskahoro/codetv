@@ -21,7 +21,7 @@ DEFAULT_TRANSCRIPT_OR_METADATA: YoutubeDataType = YoutubeDataType.transcript
 
 class Webhook(BaseModel):
     link: str
-    transcript_or_metadata: YoutubeDataType = YoutubeDataType.metadata
+    data_type: YoutubeDataType = YoutubeDataType.metadata
 
 
 image: Image = modal.Image.debian_slim().pip_install(
@@ -57,7 +57,6 @@ def get_youtube_info(
 
 
 @app.function(
-    region="us-east4",
     allow_concurrent_inputs=1000,
     enable_memory_snapshot=False,
 )
@@ -69,7 +68,7 @@ def web(
     webhook: Webhook,
 ) -> YouTubeData | dict[str, Any]:
     link: str = webhook.link
-    transcript_or_metadata: YoutubeDataType = webhook.transcript_or_metadata
+    transcript_or_metadata: YoutubeDataType = webhook.data_type
     print(link)
     print(transcript_or_metadata)
     return get_youtube_info(
