@@ -107,9 +107,9 @@ class YouTubeDownloader:
         with YoutubeDL(ydl_opts) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
-                return self._process_info(info)
+                return self._process_info(info, url)
             except Exception as e:
-                return {"error": str(e), "url": url}
+                return YouTubeData(error=str(e), url=url)
 
     def get_metadata_only(self, url: str) -> YouTubeData:
         """Extract only metadata without downloading any files.
@@ -128,9 +128,9 @@ class YouTubeDownloader:
         with YoutubeDL(ydl_opts) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
-                return self._process_info(info)
+                return self._process_info(info, url)
             except Exception as e:
-                return {"error": str(e), "url": url}
+                return YouTubeData(error=str(e), url=url)
 
     def get_subtitles(self, url: str) -> YouTubeData:
         """Extract subtitles/captions from a YouTube video in memory.
