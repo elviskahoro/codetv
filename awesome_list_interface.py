@@ -157,7 +157,6 @@ def display_results(result: dict, processing_time: float):
         return
     
     parsed_data = result.get('parsed_data', {})
-    mcp_result = result.get('mcp_result', {})
     
     print("📊 PARSED INFORMATION:")
     print("-" * 30)
@@ -187,13 +186,6 @@ def display_results(result: dict, processing_time: float):
     if context_summary:
         print(f"\n📝 SUMMARY:")
         print(f"{context_summary}")
-    
-    # Show MCP result
-    print(f"\n🔗 MCP SERVER RESULT:")
-    print("-" * 30)
-    print(f"Status: {mcp_result.get('mcp_status', 'N/A')}")
-    print(f"Message: {mcp_result.get('message', 'N/A')}")
-    print(f"Timestamp: {mcp_result.get('timestamp', 'N/A')}")
 
 def save_results_to_file(result: dict, output_file: str, logger):
     """Save results to a JSON file."""

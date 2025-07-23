@@ -1,0 +1,25 @@
+2025-07-23 12:42:46 - awesome_list_agent - INFO - setup_logging:65 - Logging initialized - Level: INFO, File: logs/awesome_list_20250723_124246.log
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:80 - ============================================================
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:81 - Starting Awesome List Agent CLI
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:82 - Timestamp: 2025-07-23T12:42:46.604329
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:83 - Input URL: https://github.com/sindresorhus/awesome
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:84 - Log Level: INFO
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:85 - Verbosity: high
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:86 - Galileo Enabled: True
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:87 - ============================================================
+2025-07-23 12:42:46 - awesome_list_agent - INFO - main:103 - Initializing AwesomeListAgent with factory
+2025-07-23 12:42:47 - awesome_list_agent - INFO - main:110 - Starting to process URL: https://github.com/sindresorhus/awesome
+2025-07-23 12:42:47 - awesome_list_agent.AwesomeListParser - INFO - execute:92 - Starting to parse Awesome List URL: https://github.com/sindresorhus/awesome
+2025-07-23 12:42:47 - awesome_list_agent.AwesomeListParser - INFO - execute:104 - Fetching content from URL
+2025-07-23 12:42:48 - awesome_list_agent.AwesomeListParser - INFO - execute:115 - Successfully fetched content (537186 characters)
+2025-07-23 12:42:48 - awesome_list_agent.AwesomeListParser - INFO - execute:118 - Starting content parsing
+2025-07-23 12:42:48 - awesome_list_agent.AwesomeListParser - INFO - execute:123 - Parsing completed successfully
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:119 - Processing completed in 2.24 seconds
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:120 - Result status: success
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:123 - Successfully processed Awesome List
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:125 - Extracted topic: GitHub - sindresorhus/awesome: 😎 Awesome lists about all kinds of interesting topics
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:126 - Found 806 items
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:127 - Detected language: Javascript
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:128 - Categories: 10
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:141 - Application completed successfully
+2025-07-23 12:42:49 - awesome_list_agent - INFO - main:142 - ============================================================
