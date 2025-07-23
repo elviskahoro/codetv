@@ -3,6 +3,7 @@
 import re
 import asyncio
 import aiohttp
+import logging
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -66,6 +67,7 @@ class AwesomeListParser(BaseTool):
     
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
+        self.logger = logging.getLogger("awesome_list_agent.AwesomeListParser")
     
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create an aiohttp session."""
@@ -87,27 +89,53 @@ class AwesomeListParser(BaseTool):
         Returns:
             Dictionary containing parsed information about the list
         """
+        self.logger.info(f"Starting to parse Awesome List URL: {url}")
+        
         try:
             # Validate URL format
             if not url.startswith(('http://', 'https://')):
-                return ToolError(error="Invalid URL format. Must start with http:// or https://")
+                error_msg = "Invalid URL format. Must start with http:// or https://"
+                self.logger.error(f"URL validation failed: {error_msg}")
+                return ToolError(error=error_msg)
+            
+            self.logger.debug("URL validation passed")
             
             # Fetch the content
+            self.logger.info("Fetching content from URL")
             session = await self._get_session()
             async with session.get(url) as response:
+                self.logger.debug(f"HTTP response status: {response.status}")
                 if response.status != 200:
-                    return ToolError(error=f"Failed to fetch URL: HTTP {response.status}")
+                    error_msg = f"Failed to fetch URL: HTTP {response.status}"
+                    self.logger.error(error_msg)
+                    return ToolError(error=error_msg)
                 
                 content = await response.text()
+                content_length = len(content)
+                self.logger.info(f"Successfully fetched content ({content_length} characters)")
             
             # Parse the content
+            self.logger.info("Starting content parsing")
             parsed_data = await self._parse_content(content, url)
+            
+            # Log parsing results
+            if isinstance(parsed_data, dict):
+                self.logger.info(f"Parsing completed successfully")
+                self.logger.debug(f"Extracted topic: {parsed_data.get('topic', 'N/A')}")
+                self.logger.debug(f"Found {parsed_data.get('total_items', 0)} items")
+                self.logger.debug(f"Detected {len(parsed_data.get('categories', []))} categories")
+                self.logger.debug(f"Language: {parsed_data.get('language', 'N/A')}")
+            
             return parsed_data
             
         except aiohttp.ClientError as e:
-            return ToolError(error=f"Network error while fetching URL: {str(e)}")
+            error_msg = f"Network error while fetching URL: {str(e)}"
+            self.logger.error(error_msg)
+            return ToolError(error=error_msg)
         except Exception as e:
-            return ToolError(error=f"Unexpected error parsing Awesome List: {str(e)}")
+            error_msg = f"Unexpected error parsing Awesome List: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            return ToolError(error=error_msg)
     
     async def _parse_content(self, content: str, url: str) -> Dict[str, Any]:
         """Parse the HTML/Markdown content to extract list information.

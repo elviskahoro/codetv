@@ -3,6 +3,7 @@ from .config import AgentConfiguration
 from .llm.base import LLMProvider
 from .llm.openai_provider import OpenAIProvider
 from .utils.logging import ConsoleAgentLogger
+from .utils.galileo_logger import create_galileo_logger
 from .agent import Agent
 
 class AgentFactory:
@@ -27,7 +28,7 @@ class AgentFactory:
     def get_logger(self, agent_id: str) -> Optional[ConsoleAgentLogger]:
         """Get logger if enabled"""
         if self.config.enable_logging:
-            return ConsoleAgentLogger(agent_id)
+            return create_galileo_logger(agent_id)
         return None
     
     def create_agent(
