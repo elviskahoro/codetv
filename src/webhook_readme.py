@@ -65,13 +65,13 @@ app = modal.App(
 def web(
     webhook: WebhookInput,
 ) -> YouTubeData:
-    link: str = webhook.link
-    transcript_or_metadata: TranscriptOrMetadata = webhook.transcript_or_metadata
-    print(link)
-    print(transcript_or_metadata)
-    return get_youtube_info(
-        url=link,
+    print("Starting pipeline")
+    markdown: str = firecrawl_markdown(
+        url=webhook.link,
     )
+    urls: list[str] = extract_youtube_urls_from_markdown(markdown)
+    print(urls)
+    return WebhookOutput(root=urls)
 
 
 @app.local_entrypoint()
