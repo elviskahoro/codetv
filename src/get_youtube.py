@@ -166,30 +166,30 @@ class YouTubeDownloader:
 
     def _extract_subtitle_content(self, info: dict[str, Any]) -> dict[str, str]:
         """Extract subtitle content from available subtitle data.
-        
+
         Args:
             info: Raw information dictionary from yt-dlp
-            
+
         Returns:
             Dictionary mapping language codes to subtitle content
         """
         subtitle_content = {}
-        
+
         # Process manual subtitles
         subtitles = info.get("subtitles", {})
         for lang, sub_list in subtitles.items():
             if sub_list and isinstance(sub_list, list):
                 # Get the first subtitle format (usually the best quality)
                 subtitle_content[f"manual_{lang}"] = f"Available subtitle formats: {[s.get('ext', 'unknown') for s in sub_list]}"
-        
+
         # Process automatic captions
         auto_captions = info.get("automatic_captions", {})
         for lang, cap_list in auto_captions.items():
             if cap_list and isinstance(cap_list, list):
                 subtitle_content[f"auto_{lang}"] = f"Available caption formats: {[c.get('ext', 'unknown') for c in cap_list]}"
-        
+
         return subtitle_content
-    
+
     def to_json_string(self, info: dict[str, Any]) -> str:
         """Convert extracted information to JSON string.
 
