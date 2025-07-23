@@ -10,6 +10,11 @@ from urllib.parse import urlparse, parse_qs
 from enum import Enum
 from pydantic import BaseModel, Field
 
+try:
+    from yt_dlp import YoutubeDL
+except ImportError:
+    YoutubeDL = None
+
 from .base import BaseTool
 from ..models import ToolMetadata, ToolError
 
