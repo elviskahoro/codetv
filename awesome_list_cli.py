@@ -22,12 +22,12 @@ from awesome_list_agent.utils.galileo_logger import GalileoAgentLogger
 def setup_environment():
     """Set up environment variables and configuration."""
     load_dotenv()
-    
+
     # Set default Galileo configuration if not already set
     if not os.getenv("GALILEO_API_KEY"):
         print("⚠️  Warning: GALILEO_API_KEY not found in environment variables.")
         print("   Galileo logging will be disabled. Set GALILEO_API_KEY to enable observability.")
-    
+
     # Set default OpenAI configuration if not already set
     if not os.getenv("OPENAI_API_KEY"):
         print("❌ Error: OPENAI_API_KEY is required but not found.")
@@ -41,18 +41,18 @@ def get_awesome_list_url() -> str:
     print("This tool will analyze an Awesome List and generate a learning path for you.")
     print("It will extract key information, assess difficulty levels, and provide")
     print("personalized learning recommendations with Galileo observability.\n")
-    
+
     while True:
         url = input("📋 Please enter the Awesome List URL: ").strip()
-        
+
         if not url:
             print("❌ URL cannot be empty. Please try again.")
             continue
-            
+
         if not url.startswith(('http://', 'https://')):
             print("❌ Please enter a valid URL starting with http:// or https://")
             continue
-            
+
         # Basic URL validation
         if 'github.com' in url or 'awesome' in url.lower():
             return url
@@ -71,15 +71,15 @@ def create_agent_config() -> AgentConfiguration:
             required_keys=["openai"],
             optional_keys={"galileo": None}
         )
-        
+
         # Override to ensure Galileo logging is enabled
         config = config.with_overrides(
             enable_logging=True,
             verbosity="medium"  # Show informative output
         )
-        
+
         return config
-        
+
     except EnvironmentError as e:
         print(f"❌ Configuration Error: {e}")
         sys.exit(1)
@@ -88,28 +88,28 @@ async def run_agent(url: str):
     """Run the Awesome List Agent with the given URL."""
     print(f"\n🔍 Processing Awesome List: {url}")
     print("⏳ This may take a few moments...\n")
-    
+
     try:
         # Create configuration
         config = create_agent_config()
-        
+
         # Set up Galileo logger
         galileo_logger = GalileoAgentLogger(agent_id="awesome_list_cli")
-        
+
         # Create agent with Galileo logging
         agent = AwesomeListAgent(
             config=config,
             logger=galileo_logger
         )
-        
+
         # Process the awesome list
         result = await agent.process_awesome_list(url)
-        
+
         # Display results
         print("\n" + "=" * 60)
         print("🎯 COMPREHENSIVE ANALYSIS COMPLETE")
         print("=" * 60)
-        
+
         # Display learning path
         if "learning_path" in result:
             learning_path = result["learning_path"]
@@ -118,7 +118,7 @@ async def run_agent(url: str):
             print(f"⏱️  Estimated Time: {learning_path.get('estimated_time', '2-4 weeks')}")
             print(f"📊 Total Resources: {learning_path.get('total_resources', 0)}")
             print(f"💻 Primary Language: {learning_path.get('primary_language', 'General')}")
-            
+
             if "steps" in learning_path:
                 print(f"\n📋 Learning Steps ({len(learning_path['steps'])} total):")
                 for i, step in enumerate(learning_path["steps"], 1):
@@ -130,31 +130,31 @@ async def run_agent(url: str):
                     if step.get('resources_count'):
                         print(f"     📚 ~{step['resources_count']} resources")
                     print()
-        
+
         # Display instructional guidance
         if "instructional_guidance" in result:
             guidance = result["instructional_guidance"]
             print("🎓 Instructional Guidance:")
             print(f"   {guidance.get('summary', 'No guidance available')}")
-            
+
             if "tips" in guidance:
                 print("\n💡 Learning Tips:")
                 for tip in guidance["tips"]:
                     print(f"   • {tip}")
-            
+
             if "focus_areas" in guidance and guidance["focus_areas"]:
                 print(f"\n🎯 Focus Areas:")
                 for area in guidance["focus_areas"]:
                     print(f"   • {area}")
-            
+
             if "recommended_starting_point" in guidance:
                 print(f"\n🚀 Recommended Starting Point: {guidance['recommended_starting_point']}")
-        
+
         # Display comprehensive summary from parsed data
         if "parsed_data" in result and "comprehensive_summary" in result["parsed_data"]:
             print(f"\n📖 Comprehensive Summary:")
             print(f"   {result['parsed_data']['comprehensive_summary']}")
-        
+
         # Display processing metadata
         if "metadata" in result:
             metadata = result["metadata"]
@@ -164,7 +164,7 @@ async def run_agent(url: str):
             print(f"   • YouTube videos analyzed: {metadata.get('youtube_videos_count', 'Unknown')}")
             print(f"   • Processing time: {metadata.get('processing_time', 'Unknown')}")
             print(f"   • Galileo trace ID: {metadata.get('trace_id', 'Not available')}")
-        
+
         # Display MCP server status
         if "mcp_result" in result:
             mcp_result = result["mcp_result"]
@@ -173,9 +173,9 @@ async def run_agent(url: str):
                 print(f"\n🔗 MCP Server: ✅ Successfully processed")
             else:
                 print(f"\n🔗 MCP Server: ⚠️  {mcp_result.get('message', 'Unknown status')}")
-        
+
         print("\n✅ Processing complete! Check your Galileo dashboard for detailed observability data.")
-        
+
     except Exception as e:
         print(f"\n❌ Error processing Awesome List: {str(e)}")
         print("Please check your internet connection and try again.")
@@ -189,13 +189,13 @@ def main():
     try:
         # Set up environment
         setup_environment()
-        
+
         # Get URL from user
         url = get_awesome_list_url()
-        
+
         # Run the agent
         asyncio.run(run_agent(url))
-        
+
     except KeyboardInterrupt:
         print("\n\n👋 Goodbye! Thanks for using Awesome List Agent.")
         sys.exit(0)
@@ -204,4 +204,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    main()
