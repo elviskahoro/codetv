@@ -117,7 +117,6 @@ async def run_agent(url: str):
             print(f"🎯 Difficulty Level: {learning_path.get('difficulty', 'Intermediate')}")
             print(f"⏱️  Estimated Time: {learning_path.get('estimated_time', '2-4 weeks')}")
             print(f"📊 Total Resources: {learning_path.get('total_resources', 0)}")
-            print(f"🎥 YouTube Videos: {learning_path.get('youtube_videos', 0)}")
             print(f"💻 Primary Language: {learning_path.get('primary_language', 'General')}")
             
             if "steps" in learning_path:
