@@ -173,6 +173,68 @@ class AwesomeListAgent(Agent):
                     youtube_titles = [video.get('title', 'Unknown') for video in parsed_data.get('youtube_metadata', [])[:3]]
                     self.logger.info(f"📹 Sample YouTube videos: {', '.join(youtube_titles)}")
             
+            # Step 3: Explicitly call YouTube metadata tool for any YouTube links found
+            self.logger.info("Step 3: Executing explicit YouTube metadata extraction")
+            
+            # Extract YouTube URLs from web scraping results
+            youtube_urls = []
+            if isinstance(web_scraping_result, dict) and "links" in web_scraping_result:
+                for link in web_scraping_result["links"]:
+                    if isinstance(link, dict) and "url" in link:
+                        url_str = link["url"]
+                        if "youtube.com" in url_str or "youtu.be" in url_str:
+                            youtube_urls.append(url_str)
+            
+            # Also check parsed data for YouTube URLs
+            if isinstance(parsed_data, dict) and "youtube_metadata" in parsed_data:
+                for video in parsed_data.get("youtube_metadata", []):
+                    if isinstance(video, dict) and "url" in video:
+                        youtube_urls.append(video["url"])
+            
+            # Remove duplicates
+            youtube_urls = list(set(youtube_urls))
+            
+            self.logger.info(f"🔍 Found {len(youtube_urls)} unique YouTube URLs to process")
+            
+            # Process each YouTube URL to get detailed metadata
+            enhanced_youtube_metadata = []
+            if youtube_urls:
+                for youtube_url in youtube_urls[:10]:  # Limit to first 10 to avoid overwhelming
+                    try:
+                        self.logger.info(f"🎬 Processing YouTube URL: {youtube_url}")
+                        
+                        # Add tool span for YouTube metadata execution
+                        if hasattr(self.logger, 'add_tool_span'):
+                            youtube_start_time = time.time()
+                        
+                        youtube_result = await self.youtube_tool.execute(youtube_url)
+                        
+                        # Log tool execution span
+                        if hasattr(self.logger, 'add_tool_span'):
+                            youtube_duration = (time.time() - youtube_start_time) * 1_000_000_000
+                            self.logger.add_tool_span(
+                                tool_name="youtube_metadata_tool",
+                                inputs={"url": youtube_url},
+                                outputs=youtube_result,
+                                duration_ns=int(youtube_duration),
+                                success="error" not in youtube_result if isinstance(youtube_result, dict) else True
+                            )
+                        
+                        if isinstance(youtube_result, dict) and "error" not in youtube_result:
+                            enhanced_youtube_metadata.append(youtube_result)
+                            self.logger.info(f"✅ Successfully processed YouTube video: {youtube_result.get('title', 'Unknown')}")
+                        else:
+                            self.logger.warning(f"⚠️ Failed to process YouTube URL: {youtube_url}")
+                            
+                    except Exception as e:
+                        self.logger.error(f"❌ Error processing YouTube URL {youtube_url}: {str(e)}")
+            
+            # Update the parsed data with enhanced YouTube metadata
+            if enhanced_youtube_metadata:
+                if isinstance(parsed_data, dict):
+                    parsed_data["youtube_metadata"] = enhanced_youtube_metadata
+                    self.logger.info(f"🎬 Enhanced YouTube metadata with {len(enhanced_youtube_metadata)} videos")
+            
             # Combine all results into final result
             youtube_count = len(parsed_data.get("youtube_metadata", []))
             result = {

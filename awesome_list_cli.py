@@ -121,7 +121,19 @@ async def run_agent(url: str):
             print(f"\n📋 Topic: {parsed_data.get('topic', 'Awesome List Analysis')}")
             print(f"📚 Total Resources: {parsed_data.get('total_items', 0)}")
             print(f"📂 Categories Found: {len(parsed_data.get('categories', []))}")
-            print(f"🎥 YouTube Videos: {len(parsed_data.get('youtube_metadata', []))}")
+            
+            # Enhanced YouTube information
+            youtube_videos = parsed_data.get('youtube_metadata', [])
+            youtube_count = len(youtube_videos)
+            print(f"🎥 YouTube Videos Found: {youtube_count}")
+            
+            if youtube_count > 0:
+                print(f"🎬 YouTube Processing: ✅ Explicitly processed {youtube_count} videos")
+                # Show sample video titles
+                sample_titles = [video.get('title', 'Unknown') for video in youtube_videos[:3]]
+                print(f"📹 Sample Videos: {', '.join(sample_titles)}")
+            else:
+                print(f"🎬 YouTube Processing: ℹ️  No YouTube videos found in this Awesome List")
             
             # Display comprehensive summary if available
             if "comprehensive_summary" in parsed_data:
