@@ -6,31 +6,16 @@ from modal import Image
 from pydantic import BaseModel
 
 from get_youtube import YouTubeData
-from get_readme import firecrawl_markdown
 
-DEFAULT_MARKDOWN_URL: str = (
-    "https://github.com/josephmisiti/awesome-machine-learning"
-)
+DEFAULT_MARKDOWN_URL: str = "https://github.com/josephmisiti/awesome-machine-learning"
 
 from firecrawl.firecrawl import FirecrawlApp
 from src.extract_youtube_urls import extract_youtube_urls_from_markdown
 
 
-def firecrawl_markdown(
-    url: str,
-) -> str:
-    api_key: str = "fc-95ddf7f5c64f4e1e814f03567183dc16"
-    app: Any = FirecrawlApp(api_key=api_key)
-    scrape_data = app.scrape_url(
-        url,
-        formats=["markdown"],
-    )
-    markdown: str = scrape_data.markdown
-    return markdown
-
-
 class WebhookInput(BaseModel):
     link: str
+
 
 class WebhookOutput(BaseModel):
     data: list[str]
@@ -50,6 +35,22 @@ app = modal.App(
     name="postman-mcp-readme",
     image=image,
 )
+
+
+def firecrawl_markdown(
+    url: str,
+) -> str:
+    api_key: str = "fc-95ddf7f5c64f4e1e814f03567183dc16"
+    app: Any = FirecrawlApp(api_key=api_key)
+    scrape_data = app.scrape_url(
+        url,
+        params={
+            "onlyMainContent": True,
+        },
+    )
+    markdown = scrape_data.get("markdown", "")
+    print(markdown)
+    return markdown
 
 
 @app.function(
