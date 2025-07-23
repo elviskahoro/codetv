@@ -105,7 +105,81 @@ async def run_agent(url: str):
         # Process the awesome list
         result = await agent.process_awesome_list(url)
         
-        # Display results
+        # Check if processing was successful
+        if result.get("status") != "success":
+            print(f"\n❌ Error processing Awesome List: {result.get('error', 'Unknown error')}")
+            return
+        
+        # Display initial summary
+        print("\n" + "=" * 60)
+        print("📊 INITIAL ANALYSIS SUMMARY")
+        print("=" * 60)
+        
+        # Display basic information from parsed data
+        if "parsed_data" in result:
+            parsed_data = result["parsed_data"]
+            print(f"\n📋 Topic: {parsed_data.get('topic', 'Awesome List Analysis')}")
+            print(f"📚 Total Resources: {parsed_data.get('total_items', 0)}")
+            print(f"📂 Categories Found: {len(parsed_data.get('categories', []))}")
+            print(f"🎥 YouTube Videos: {len(parsed_data.get('youtube_metadata', []))}")
+            
+            # Display comprehensive summary if available
+            if "comprehensive_summary" in parsed_data:
+                print(f"\n📖 Summary: {parsed_data['comprehensive_summary']}")
+            
+            # Display processing metadata
+            if "metadata" in result:
+                metadata = result["metadata"]
+                print(f"\n⏱️  Processing Time: {metadata.get('processing_time', 'Unknown')}")
+        
+        # Ask for user confirmation
+        print("\n" + "=" * 60)
+        while True:
+            confirm = input("🤔 Are you ready to see the top 5 recommended YouTube videos? (yes/no): ").strip().lower()
+            if confirm in ['yes', 'y']:
+                break
+            elif confirm in ['no', 'n']:
+                print("\n👋 Thanks for using Awesome List Agent! Goodbye!")
+                return
+            else:
+                print("❌ Please enter 'yes' or 'no'.")
+        
+        # Display top 5 recommended YouTube videos
+        print("\n" + "=" * 60)
+        print("🎬 TOP 5 RECOMMENDED YOUTUBE VIDEOS")
+        print("=" * 60)
+        
+        if "parsed_data" in result and "youtube_metadata" in result["parsed_data"]:
+            youtube_videos = result["parsed_data"]["youtube_metadata"]
+            
+            if not youtube_videos:
+                print("\n❌ No YouTube videos found in this Awesome List.")
+                return
+            
+            # Sort videos by view count and duration to get the most popular/valuable ones
+            sorted_videos = sorted(
+                youtube_videos, 
+                key=lambda x: (x.get('view_count', 0), -(x.get('duration_seconds', 0))), 
+                reverse=True
+            )
+            
+            # Display top 5 videos
+            top_5_videos = sorted_videos[:5]
+            
+            for i, video in enumerate(top_5_videos, 1):
+                print(f"\n{i}. 🎥 {video.get('title', 'Unknown Title')}")
+                print(f"   👤 Channel: {video.get('channel_name', 'Unknown Channel')}")
+                print(f"   👀 Views: {video.get('view_count', 0):,}")
+                print(f"   ⏱️  Duration: {video.get('duration_seconds', 0) // 60}:{video.get('duration_seconds', 0) % 60:02d}")
+                print(f"   📅 Published: {video.get('published_date', 'Unknown')}")
+                print(f"   🔗 Watch Now: {video.get('url', 'No URL available')}")
+                
+                # Add description if available
+                if video.get('description'):
+                    desc = video['description'][:100] + "..." if len(video['description']) > 100 else video['description']
+                    print(f"   📝 {desc}")
+        
+        # Display additional analysis results
         print("\n" + "=" * 60)
         print("🎯 COMPREHENSIVE ANALYSIS COMPLETE")
         print("=" * 60)
