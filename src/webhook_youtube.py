@@ -81,7 +81,7 @@ def web(
 @app.local_entrypoint()
 def local() -> None:
     print("Starting pipeline")
-    youtube_data: YouTubeData = get_youtube_info(
+    youtube_data: YouTubeData | dict[str, Any] = get_youtube_info(
         url=DEFAULT_YOUTUBE_VIDEO,
         transcript_or_metadata=DEFAULT_TRANSCRIPT_OR_METADATA,
     )
