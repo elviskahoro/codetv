@@ -1,5 +1,3 @@
-Reflex starter template
-
 ## Dependency Management Rules
 
 ### Package Manager Requirements
