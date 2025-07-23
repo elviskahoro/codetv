@@ -83,6 +83,7 @@ class AwesomeListAgent(Agent):
                 self.logger.info(f"Found {parsed_data.get('total_items', 0)} items")
                 self.logger.info(f"Detected {len(parsed_data.get('categories', []))} categories")
             
+            # TODO: Implement MCP server call
             # Simulate MCP server call (you can replace this with actual MCP logic)
             self.logger.info("Calling MCP server")
             mcp_result = await self.call_mcp_server(url, parsed_data.get("context_summary", ""))
