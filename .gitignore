@@ -95,6 +95,7 @@ test_*.py
 *_test.py
 test_improved_agent.py
 test_galileo_integration.py
+test_cli_simple.py
 test.txt
 tests/
 test_example.py
@@ -109,12 +110,14 @@ test_example.py
 !TOOLS_DOCUMENTATION.md
 !AWESOME_LIST_CLI.md
 AGENT_IMPROVEMENTS_SUMMARY.md
+TOOL_FLOW_SUMMARY.md
 
 # Example and demonstration files
 awesome_list_examples*.py
 awesome_list_interface.py
 awesome_list_logging.py
 galileo_example.py
+setup_cli.py
 
 # Output and result directories
 outputs/
