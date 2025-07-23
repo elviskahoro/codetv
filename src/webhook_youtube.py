@@ -78,11 +78,15 @@ def web(
 
 
 @app.local_entrypoint()
-def local() -> None:
+def local(
+    data_type: str | None = None,
+) -> None:
     print("Starting pipeline")
+    if data_type is None:
+        data_type = "metadata"
     youtube_data: YouTubeData | dict[str, Any] = get_youtube_info(
         url=DEFAULT_YOUTUBE_VIDEO,
-        transcript_or_metadata=DEFAULT_TRANSCRIPT_OR_METADATA,
+        transcript_or_metadata=YoutubeDataType(data_type),
     )
     print(youtube_data)
 
